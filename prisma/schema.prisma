@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  phone         String    @unique
+  password      String    // Hashed password
+  name          String?
+  gender        String?   // "男" | "女"
+  birthDate     String?   // YYYY-MM-DD
+  birthTime     String?   // HH:mm
+  birthLocation String?
+  currentResidence String?
+  pastResidences   String? // JSON string or comma separated
+  experienceNarrative String?
+  currentStatus    String?
+  futureVision     String?
+  role             String    @default("user")
+  trialEndsAt      DateTime?
+  subscriptionEndsAt DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  cases         Case[]
+  sessions      Session[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Case {
+  id               String   @id @default(cuid())
+  userId           String?
+  paradigm         String   // "bazi", "liuyao", etc.
+  question         String
+  inputData        String   // JSON string of all input parameters
+  result           String   // The markdown result from LLM
+  structuredResult String?  // JSON string of structured analysis (future proofing)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  user             User?    @relation(fields: [userId], references: [id])
+}
+
+model Knowledge {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  tags      String   // JSON array of tags
+  source    String
+  paradigm  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

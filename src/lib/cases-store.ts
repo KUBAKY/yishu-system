@@ -1,46 +1,78 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { prisma } from "@/lib/prisma";
 import { YishuCase } from "@/types/case";
 
-const dataDir = path.join(process.cwd(), "data");
-const dataFile = path.join(dataDir, "cases.json");
-
-async function ensureDataFile() {
-  await mkdir(dataDir, { recursive: true });
-  try {
-    await readFile(dataFile, "utf8");
-  } catch {
-    await writeFile(dataFile, "[]", "utf8");
-  }
-}
-
-async function readAllCases(): Promise<YishuCase[]> {
-  await ensureDataFile();
-  const raw = await readFile(dataFile, "utf8");
-  const parsed = JSON.parse(raw) as YishuCase[];
-  return parsed
-    .filter((item) => item && item.id && item.createdAt && typeof item.userId === "string")
-    .map((item) => ({
-      ...item,
-      userId: item.userId.trim(),
-      citations: Array.isArray(item.citations) ? item.citations : [],
-    }))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-}
-
 export async function readCasesByUser(userId: string): Promise<YishuCase[]> {
-  const normalizedUserId = userId.trim();
-  if (!normalizedUserId) {
-    return [];
-  }
-  const list = await readAllCases();
-  return list.filter((item) => item.userId === normalizedUserId);
+  if (!userId) return [];
+  
+  const cases = await prisma.case.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return cases.map((c) => {
+    let input: any = {};
+    try {
+      input = JSON.parse(c.inputData);
+    } catch (e) {
+      console.error("Failed to parse inputData for case", c.id, e);
+    }
+
+    let structured: any = {};
+    if (c.structuredResult) {
+      try {
+        structured = JSON.parse(c.structuredResult);
+      } catch (e) {
+        console.error("Failed to parse structuredResult for case", c.id, e);
+      }
+    }
+    
+    return {
+      id: c.id,
+      userId: c.userId || "",
+      paradigm: c.paradigm,
+      paradigmLabel: input.paradigmLabel || c.paradigm,
+      question: c.question,
+      location: input.location || "",
+      currentTime: input.currentTime || "",
+      result: c.result,
+      model: input.model || "AI",
+      reference: input.reference || "",
+      lunarContext: input.lunarContext,
+      foundations: structured.foundations || [],
+      aiEnhancements: structured.aiEnhancements || [],
+      citations: structured.citations || [],
+      createdAt: c.createdAt.toISOString(),
+    };
+  });
 }
 
 export async function appendCase(item: YishuCase): Promise<YishuCase> {
-  const list = await readAllCases();
-  list.unshift(item);
-  const sliced = list.slice(0, 200);
-  await writeFile(dataFile, JSON.stringify(sliced, null, 2), "utf8");
+  const { 
+    id, userId, paradigm, question, result, createdAt, 
+    paradigmLabel, location, currentTime, model, reference, lunarContext,
+    foundations, aiEnhancements, citations
+  } = item;
+
+  const inputData = JSON.stringify({
+    paradigmLabel, location, currentTime, model, reference, lunarContext
+  });
+  
+  const structuredResult = JSON.stringify({
+    foundations, aiEnhancements, citations
+  });
+
+  await prisma.case.create({
+    data: {
+      id: id || undefined, // Use provided ID or auto-generate
+      userId: userId || null, // Convert empty string to null
+      paradigm,
+      question,
+      inputData,
+      result,
+      structuredResult,
+      createdAt: createdAt ? new Date(createdAt) : undefined,
+    },
+  });
+
   return item;
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { BaziData } from "@/lib/paradigm-engine";
 
 export function BaziView() {
   const [name, setName] = useState("");
@@ -16,7 +17,7 @@ export function BaziView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
-  const [summary, setSummary] = useState("");
+  const [engineData, setEngineData] = useState<BaziData | null>(null);
 
   const canSubmit =
     name.trim().length >= 2 &&
@@ -31,6 +32,7 @@ export function BaziView() {
     setLoading(true);
     setError("");
     setResult("");
+    setEngineData(null);
     try {
       const parsed = new Date(currentTime);
       if (Number.isNaN(parsed.getTime())) {
@@ -52,6 +54,10 @@ export function BaziView() {
             birthTime,
             birthLocation: birthLocation.trim(),
             currentResidence: currentResidence.trim(),
+            pastResidences: "",
+            experienceNarrative: "",
+            currentStatus: "",
+            futureVision: "",
           },
           eventContext: {
             background: "命盘级分析",
@@ -61,12 +67,22 @@ export function BaziView() {
           },
         }),
       });
-      const data = (await response.json()) as { result?: string; error?: string };
+      const data = (await response.json()) as { 
+        result?: string; 
+        error?: string;
+        meta?: {
+          engineData?: {
+            bazi?: BaziData;
+          }
+        }
+      };
       if (!response.ok || !data.result) {
         throw new Error(data.error ?? "八字推演失败");
       }
       setResult(data.result);
-      setSummary(data.result.split("\n").slice(0, 4).join(" "));
+      if (data.meta?.engineData?.bazi) {
+        setEngineData(data.meta.engineData.bazi);
+      }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "八字推演失败");
     } finally {
@@ -155,27 +171,6 @@ export function BaziView() {
           />
         </label>
 
-        <div className="grid gap-4 grid-cols-2">
-          <label className="space-y-1">
-            <span className="text-sm text-xuanpaper/70">起局时间</span>
-            <input
-              type="datetime-local"
-              value={currentTime}
-              onChange={(e) => setCurrentTime(e.target.value)}
-              className="w-full bg-white/5 border border-gold-line/30 rounded px-3 py-2 outline-none focus:border-gold-light"
-            />
-          </label>
-          <label className="space-y-1">
-            <span className="text-sm text-xuanpaper/70">当前地点</span>
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="选填"
-              className="w-full bg-white/5 border border-gold-line/30 rounded px-3 py-2 outline-none focus:border-gold-light"
-            />
-          </label>
-        </div>
-
         <div className="pt-4">
           <Button variant="primary" size="lg" className="w-full" onClick={handleSubmit} disabled={!canSubmit}>
             {loading ? "推演中..." : "排盘推演"}
@@ -184,8 +179,46 @@ export function BaziView() {
       </div>
 
       {error && <p className="text-sm text-red-300 text-center">{error}</p>}
-      {summary && <p className="text-sm text-xuanpaper/70 bg-black/20 border border-gold-line/20 rounded-lg p-3">{summary}</p>}
-      {result && <pre className="text-left whitespace-pre-wrap bg-black/30 border border-gold-line/20 rounded-lg p-4">{result}</pre>}
+
+      {engineData && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-4 gap-2 text-center bg-black/40 p-4 rounded-lg border border-gold-line/30">
+             <div className="space-y-2">
+               <div className="text-xs text-xuanpaper/50">年柱</div>
+               <div className="text-xl font-song text-gold-light">{engineData.ganzhi.year}</div>
+               <div className="text-xs text-xuanpaper/50">{engineData.wuxing.year}</div>
+             </div>
+             <div className="space-y-2">
+               <div className="text-xs text-xuanpaper/50">月柱</div>
+               <div className="text-xl font-song text-gold-light">{engineData.ganzhi.month}</div>
+               <div className="text-xs text-xuanpaper/50">{engineData.wuxing.month}</div>
+             </div>
+             <div className="space-y-2">
+               <div className="text-xs text-xuanpaper/50">日柱</div>
+               <div className="text-xl font-song text-gold-light">{engineData.ganzhi.day}</div>
+               <div className="text-xs text-xuanpaper/50">{engineData.wuxing.day}</div>
+             </div>
+             <div className="space-y-2">
+               <div className="text-xs text-xuanpaper/50">时柱</div>
+               <div className="text-xl font-song text-gold-light">{engineData.ganzhi.time}</div>
+               <div className="text-xs text-xuanpaper/50">{engineData.wuxing.time}</div>
+             </div>
+          </div>
+          <div className="flex justify-between text-sm px-2">
+            <span className="text-xuanpaper/70">节气：{engineData.seasons.jieqi}</span>
+            <span className="text-xuanpaper/70">日主：{engineData.dayMaster} ({engineData.naiveStrength})</span>
+          </div>
+        </div>
+      )}
+
+      {result && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-song text-gold-light text-center border-b border-gold-line/20 pb-2">推演结论</h3>
+          <div className="prose prose-invert prose-gold max-w-none text-xuanpaper/90 text-justify leading-relaxed">
+            <pre className="whitespace-pre-wrap font-sans text-sm">{result}</pre>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

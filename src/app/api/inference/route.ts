@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { Solar } from "lunar-javascript";
 import { retrieveClassicalCitations } from "@/lib/classical-references";
+import { resolveSession } from "@/lib/auth-store";
+import { appendCase } from "@/lib/cases-store";
+import { getBaziData, getQimenBasicInfo, getLiuyaoData } from "@/lib/paradigm-engine";
 
 type InferencePayload = {
   paradigm?: string;
@@ -275,8 +279,15 @@ function buildPrompt(params: {
     note: string;
     category: string;
   }>;
+  citations: Array<{
+    title: string;
+    chapter: string;
+    quote: string;
+    source: string;
+  }>;
+  engineContext?: string;
 }): string {
-  const { paradigm, analysisMode, forecastWindow, angles, question, currentTime, location, profile, eventContext, lunarContext, spec, foundationModules, imageContext } = params;
+  const { paradigm, analysisMode, forecastWindow, angles, question, currentTime, location, profile, eventContext, lunarContext, spec, foundationModules, imageContext, engineContext, citations: providedCitations } = params;
   const paradigmDirectiveMap: Record<string, string[]> = {
     bazi: [
       "必须显式拆解：日主强弱、十神结构、喜忌取用、大运流年触发点。",
@@ -285,6 +296,11 @@ function buildPrompt(params: {
     liuyao: [
       "必须显式拆解：世应、六亲、动爻与变爻，识别主客关系。",
       "必须给出应期判断及触发条件，并给反例情境。",
+      "请根据【六爻排盘】数据中的本卦、变卦、动爻，结合【问题】进行具体断卦。",
+      "第一步：取用神。根据问题类型（财运取妻财、事业取官鬼等）确定用神。",
+      "第二步：看旺衰。分析用神在月建、日辰的旺衰。",
+      "第三步：看生克。分析动爻、变爻对用神的生克冲合。",
+      "第四步：定吉凶。综合判断吉凶，并给出应期。",
     ],
     meihua: [
       "必须显式拆解：体卦、用卦、互卦、变卦，区分主因与外因。",
@@ -316,11 +332,7 @@ function buildPrompt(params: {
     ],
   };
   const paradigmDirectives = paradigmDirectiveMap[paradigm] ?? [];
-  const citations = retrieveClassicalCitations({
-    paradigm: paradigm === "composite" ? "bazi" : paradigm,
-    question,
-    limit: 2,
-  });
+  const citations = providedCitations;
   const citationBlock =
     citations.length > 0
       ? citations.map((item) => `- ${item.title}《${item.chapter}》：${item.quote}`).join("\n")
@@ -403,6 +415,7 @@ function buildPrompt(params: {
     lunarContext
       ? `历法上下文：阳历${lunarContext.solarDate}，农历${lunarContext.lunarDate}，干支${lunarContext.ganzhi}`
       : "历法上下文：无有效时间，忽略历法推演",
+    engineContext ? `算法排盘数据：${engineContext}` : "",
     "方法与依据：",
     methodBlock,
     "开源能力底座：",
@@ -605,6 +618,10 @@ function validateAttachments(attachmentsInput: InferencePayload["attachments"]) 
 }
 
 export async function POST(request: NextRequest) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("yishu_session")?.value;
+  const user = token ? await resolveSession(token) : null;
+
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) {
     return NextResponse.json({ error: "OPENROUTER_API_KEY 未配置" }, { status: 500 });
@@ -651,8 +668,59 @@ export async function POST(request: NextRequest) {
   }
 
   const lunarContext = buildLunarContext(currentTime);
+  
+  const parsedTime = new Date(currentTime);
+  let engineContext = "";
+  const engineData: Record<string, unknown> = {};
+
+  if (!Number.isNaN(parsedTime.getTime())) {
+    if (paradigm === "bazi" || paradigm === "composite" || (angles && angles.includes("八字"))) {
+      try {
+        const data = getBaziData(parsedTime);
+        engineContext += `\n[八字排盘]\n四柱：${data.ganzhi.year} ${data.ganzhi.month} ${data.ganzhi.day} ${data.ganzhi.time}\n五行：${data.wuxing.year} ${data.wuxing.month} ${data.wuxing.day} ${data.wuxing.time}\n日主：${data.dayMaster} (${data.naiveStrength})\n节气：${data.seasons.jieqi}\n`;
+        engineData.bazi = data;
+      } catch (e) {
+        console.error("Bazi engine error", e);
+      }
+    }
+    if (paradigm === "qimen" || (angles && angles.includes("奇门"))) {
+      try {
+        const data = getQimenBasicInfo(parsedTime);
+        engineContext += `\n[奇门排盘]\n节气：${data.jieqi}\n四柱：${data.ganzhi}\n`;
+        engineData.qimen = data;
+      } catch (e) {
+        console.error("Qimen engine error", e);
+      }
+    }
+    if (paradigm === "liuyao" || (angles && angles.includes("六爻"))) {
+      try {
+        const background = eventContext.background || "";
+        const match = background.match(/六爻卦象（初至上）：(.*?)；/);
+        if (match && match[1]) {
+          const yao = match[1].split("、");
+          const data = getLiuyaoData(parsedTime, yao);
+          engineContext += `\n[六爻排盘]\n本卦：${data.ben.name} (世${data.ben.shi || "?"}/应${data.ben.ying || "?"})\n`;
+          if (data.bian) {
+            engineContext += `变卦：${data.bian.name}\n`;
+          }
+          engineContext += `动爻：${data.movingLines.length > 0 ? data.movingLines.join(",") : "静卦"}\n`;
+          engineContext += `日期：${data.date.ganzhi} (空亡:${data.date.xunkong})\n`;
+          engineData.liuyao = data;
+        }
+      } catch (e) {
+        console.error("Liuyao engine error", e);
+      }
+    }
+  }
+
   const foundationModules = buildFoundationModules(paradigm, angles);
   const model = process.env.OPENROUTER_MODEL ?? "openrouter/auto";
+
+  const promptCitations = await retrieveClassicalCitations({
+    paradigm: paradigm === "composite" ? "bazi" : paradigm,
+    question: normalizedQuestion,
+    limit: 2,
+  });
 
   const prompt = buildPrompt({
     paradigm,
@@ -672,6 +740,8 @@ export async function POST(request: NextRequest) {
       note: item.note,
       category: item.category,
     })),
+    engineContext,
+    citations: promptCitations,
   });
 
   const controller = new AbortController();
@@ -798,12 +868,44 @@ export async function POST(request: NextRequest) {
       clearTimeout(formatterTimeoutId);
     }
   }
-  const citations = retrieveClassicalCitations({
-    paradigm: paradigm === "composite" ? "bazi" : paradigm,
-    question: normalizedQuestion,
-    result: finalResult,
-    limit: 3,
-  });
+  let citations = promptCitations;
+  // If result is available, fetch more relevant citations
+  if (finalResult) {
+    const extraCitations = await retrieveClassicalCitations({
+      paradigm: paradigm === "composite" ? "bazi" : paradigm,
+      question: normalizedQuestion,
+      result: finalResult,
+      limit: 3,
+    });
+    citations = extraCitations;
+  }
+
+  try {
+    await appendCase({
+      id: crypto.randomUUID(),
+      userId: user?.id || "",
+      paradigm,
+      paradigmLabel: spec.label,
+      question: normalizedQuestion,
+      location,
+      currentTime,
+      result: finalResult,
+      model: finalModel,
+      reference: spec.reference,
+      lunarContext: lunarContext ?? undefined,
+      foundations: foundationModules,
+      engineData,
+      aiEnhancements: [
+        "多范式交叉校验",
+        "证据链机构化重排",
+        "分阶段行动建议生成",
+      ],
+      citations,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Failed to save case:", error);
+  }
 
   return NextResponse.json({
     result: finalResult,
@@ -818,6 +920,7 @@ export async function POST(request: NextRequest) {
       citations,
       lunarContext: lunarContext ?? undefined,
       foundations: foundationModules,
+      engineData,
       aiEnhancements: [
         "多范式交叉校验",
         "证据链机构化重排",

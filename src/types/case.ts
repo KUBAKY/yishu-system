@@ -23,6 +23,7 @@ export type YishuCase = {
     integration: "direct" | "reference";
     confidence: number;
   }>;
+  engineData?: Record<string, unknown>;
   aiEnhancements?: string[];
   citations: Array<{
     title: string;
