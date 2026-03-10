@@ -1,65 +1,218 @@
-import Image from "next/image";
+"use client";
+
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { 
+  Compass, 
+  Sparkles, 
+  BookText, 
+  MoonStar, 
+  Wind,
+  ScrollText,
+  Stars,
+  VenetianMask,
+  Hand,
+  ScanFace
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { AuthMeResponse } from "@/types/auth";
+import { cn } from "@/lib/utils";
+
+const PARADIGMS = [
+  {
+    id: "bazi",
+    title: "八字命理",
+    desc: "子平真诠，洞察先天格局与岁运起伏",
+    icon: Sparkles,
+    color: "text-amber-400",
+    href: "/paradigm/bazi",
+  },
+  {
+    id: "liuyao",
+    title: "六爻纳甲",
+    desc: "动静之间，卜问人事忧疑与吉凶应期",
+    icon: ScrollText,
+    color: "text-blue-400",
+    href: "/paradigm/liuyao",
+  },
+  {
+    id: "meihua",
+    title: "梅花易数",
+    desc: "观物起卦，心易神动捕捉天地外应",
+    icon: MoonStar,
+    color: "text-purple-400",
+    href: "/paradigm/meihua",
+  },
+  {
+    id: "qimen",
+    title: "奇门遁甲",
+    desc: "运筹帷幄，时空博弈下的决胜之道",
+    icon: Compass,
+    color: "text-red-400",
+    href: "/paradigm/qimen",
+  },
+  {
+    id: "fengshui",
+    title: "堪舆风水",
+    desc: "藏风纳气，调和场域与生命的能量契合",
+    icon: Wind,
+    color: "text-emerald-400",
+    href: "/paradigm/fengshui",
+  },
+  {
+    id: "zodiac",
+    title: "星座占星",
+    desc: "群星轨迹，映照性格节律与关系成长路径",
+    icon: Stars,
+    color: "text-cyan-400",
+    href: "/paradigm/zodiac",
+  },
+  {
+    id: "tarot",
+    title: "塔罗推演",
+    desc: "牌阵映心，揭示处境变量与行动选择顺序",
+    icon: VenetianMask,
+    color: "text-fuchsia-400",
+    href: "/paradigm/tarot",
+  },
+  {
+    id: "palmistry",
+    title: "手相分析",
+    desc: "观掌纹丘象，识别行为节律与决策盲区",
+    icon: Hand,
+    color: "text-lime-400",
+    href: "/paradigm/palmistry",
+  },
+  {
+    id: "physiognomy",
+    title: "面相分析",
+    desc: "察五官神采，推断风险信号与阶段机会",
+    icon: ScanFace,
+    color: "text-orange-400",
+    href: "/paradigm/physiognomy",
+  },
+];
 
 export default function Home() {
+  const router = useRouter();
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    async function loadAuth() {
+      try {
+        const response = await fetch("/api/auth/me", { cache: "no-store" });
+        const data = (await response.json()) as AuthMeResponse;
+        if (!alive) return;
+        setAuthenticated(Boolean(response.ok && data.authenticated));
+      } catch {
+        if (!alive) return;
+        setAuthenticated(false);
+      }
+    }
+    void loadAuth();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="min-h-screen bg-(--color-xuanqing) selection:bg-(--color-gold-dark) selection:text-white">
+      {/* 背景微光效果 */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-(--color-gold-glow) blur-[120px] opacity-20" />
+        <div className="absolute bottom-[20%] -right-[10%] w-[30%] h-[30%] bg-(--color-zhusha) blur-[150px] opacity-10" />
+      </div>
+
+      <main className="relative z-10 max-w-lg mx-auto px-6 pt-20 pb-32 flex flex-col gap-12">
+        {/* 标题区 */}
+        <section className="text-center space-y-4">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl md:text-5xl font-seal text-(--color-gold-light) tracking-widest"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            易 枢
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-sm font-kai text-xuanpaper/60 tracking-[0.2em] uppercase"
           >
-            Documentation
-          </a>
-        </div>
+            YiShu Intelligent Deduction
+          </motion.p>
+          <motion.div 
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+            className="w-16 h-px bg-(--color-gold-line) mx-auto mt-6"
+          />
+        </section>
+
+        {/* 核心功能入口 */}
+        <section className="grid gap-6">
+          {PARADIGMS.map((item, idx) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 + idx * 0.1 }}
+            >
+              <Card
+                className="group cursor-pointer hover:border-gold-light/60 active:scale-[0.98]"
+                glow
+                onClick={() => router.push(item.href)}
+              >
+                <CardHeader>
+                  <div className={cn("p-2 rounded-sm bg-white/5 group-hover:bg-white/10 transition-colors", item.color)}>
+                    <item.icon size={24} />
+                  </div>
+                  <h2 className="text-xl font-song text-(--color-gold-light)">{item.title}</h2>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm font-kai">{item.desc}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </section>
+
+        {/* 底部功能区 */}
+        <section className="mt-8 flex flex-col gap-4">
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full font-song tracking-widest group"
+            onClick={() => router.push("/start")}
+          >
+            开始今日推演
+            <Sparkles className="ml-2 w-4 h-4 group-hover:animate-pulse" />
+          </Button>
+          <div className="flex gap-4">
+            <Button variant="outline" className="flex-1" onClick={() => router.push("/cases")}>
+              <BookText className="mr-2 w-4 h-4" /> 经典案例
+            </Button>
+            <Button variant="outline" className="flex-1" onClick={() => router.push("/tools/compass")}>
+              <Compass className="mr-2 w-4 h-4" /> 罗盘工具
+            </Button>
+          </div>
+          {authenticated ? (
+            <Button variant="outline" className="w-full" onClick={() => router.push("/account")}>
+              账号中心
+            </Button>
+          ) : null}
+        </section>
       </main>
+
+      {/* 极简底部导航/声明 */}
+      <footer className="fixed bottom-0 left-0 right-0 p-6 text-center z-20 bg-linear-to-t from-(--color-xuanqing) to-transparent">
+        <p className="text-[10px] text-xuanpaper/30 font-kai">
+          易枢 · 遵法古籍 · 智取其枢
+        </p>
+      </footer>
     </div>
   );
 }

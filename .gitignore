@@ -39,3 +39,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Data & Sensitive Information
+/术数书籍数据/
+/李亚威的命盘/
+/zpay支付集成文件/
+
+# AI System Folders
+/agents/
+/skills/
+/workflows/
+/rules/
+/mcp_config.json
+
+# Environment/Python
+.venv*/
+__pycache__/
+*.py[cod]
+.python-version

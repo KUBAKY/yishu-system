@@ -1,0 +1,57 @@
+[
+  {
+    "id": "250d310c-56d8-42a8-ae04-b7e72def4bfb",
+    "phone": "13800138001",
+    "passwordSalt": "f57e20e68081b47fcb814cf8fcd380f5",
+    "passwordHash": "d3b73b2f27561efbe2ca4998b77c4ac25c34be18d4cde48ef87e89170f747d09aff87cf70eebf313cfb4865b869c27839de92e7e207590c27c869edb41b1805d",
+    "createdAt": "2026-03-10T04:20:32.498Z",
+    "trialEndsAt": "2026-06-08T04:20:32.498Z"
+  },
+  {
+    "id": "5c7be97d-d5fc-44ef-b3a7-edfae0f5f70c",
+    "phone": "13800138000",
+    "passwordSalt": "c68726ed38cde9c7e7d755e02222b7df",
+    "passwordHash": "3817eabb2b3995620c64f9b1d8f5cbe388c671867e868d1bac536e13d8952a8d160c737e249266f1178ffb785d8df46ec62a2942218a0033ad440792e45b6d1d",
+    "createdAt": "2026-03-10T04:16:36.789Z",
+    "trialEndsAt": "2026-06-08T04:16:36.789Z"
+  },
+  {
+    "id": "d3ee2b7a-5f04-4e7c-a1c9-c5a7d6f2a9b1",
+    "phone": "15670569187",
+    "createdAt": "2026-03-09T10:00:00.000Z",
+    "trialEndsAt": "2026-06-07T10:00:00.000Z",
+    "subscriptionEndsAt": "2099-12-31T23:59:59.000Z",
+    "profile": {
+      "name": "李亚威",
+      "gender": "男",
+      "birthDate": "1990-08-15",
+      "birthTime": "12:05",
+      "birthLocation": "河南鹿邑",
+      "currentResidence": "上海",
+      "pastResidences": "河南鹿邑、新乡、天津、深圳",
+      "experienceNarrative": "出身农村，有时家贫，头脑笨拙。后练武术三五年，再回归文化学习。学习逐步起色，最终考上大学并热爱运动，有过长途骑行经历。2009-2013年在天津上大学。毕业后与朋友合伙创业开健身房，后因商业能力与执行力问题于2018年关闭健身房及饭店等业务。之后在上海、深圳打工各一年，再回上海打工并合伙创业至今。",
+      "currentStatus": "目前有负债，收入不足，生活压力较大。已婚已育，有一女一岁半，家庭整体和睦，但因经济问题偶有埋怨。",
+      "futureVision": "希望修正自身缺点、发挥优点，尽快找到出路；还清负债，为家庭创造更好经济条件，实现个人抱负。"
+    },
+    "credentials": {
+      "username": "lee",
+      "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+      "passwordHashAlgo": "sha256"
+    },
+    "extendedProfile": {
+      "solarCalendar": true,
+      "currentResidence": "上海",
+      "pastResidences": [
+        "河南鹿邑",
+        "新乡",
+        "天津",
+        "深圳"
+      ],
+      "experienceNarrative": "出身农村，有时家贫，头脑笨拙。后练武术三五年，再回归文化学习。学习逐步起色，最终考上大学并热爱运动，有过长途骑行经历。2009-2013年在天津上大学。毕业后与朋友合伙创业开健身房，后因商业能力与执行力问题于2018年关闭健身房及饭店等业务。之后在上海、深圳打工各一年，再回上海打工并合伙创业至今。",
+      "currentStatus": "目前有负债，收入不足，生活压力较大。已婚已育，有一女一岁半，家庭整体和睦，但因经济问题偶有埋怨。",
+      "futureVision": "希望修正自身缺点、发挥优点，尽快找到出路；还清负债，为家庭创造更好经济条件，实现个人抱负。"
+    },
+    "passwordSalt": "6e728078b5e0671aaced31ba578813ec",
+    "passwordHash": "fe081072c27e0e6e921545efa7d001961c232288dde45d500640cad5ec17250d2244dd524a6a6edc6d86c8b2e0bb711cabcb514609245ba209a1a8ddd6039168"
+  }
+]
