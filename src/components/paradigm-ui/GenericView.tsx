@@ -195,7 +195,7 @@ export function GenericView({
   return (
     <div className="space-y-8 text-center max-w-3xl mx-auto">
       <div className="space-y-2">
-        <h2 className="text-2xl font-song text-(--color-gold-light)">{title}</h2>
+        <h2 className="text-2xl font-song text-gold-light">{title}</h2>
         <p className="text-xuanpaper/60">{desc}</p>
       </div>
 

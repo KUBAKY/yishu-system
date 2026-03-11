@@ -168,10 +168,10 @@ export default function AccountPage() {
   }
 
   return (
-    <main className="min-h-screen bg-(--color-xuanqing) text-(--color-xuanpaper) px-6 py-12">
+    <main className="min-h-screen bg-xuanqing text-xuanpaper px-6 py-12">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-3xl font-song text-(--color-gold-light)">账号中心</h1>
+          <h1 className="text-3xl font-song text-gold-light">账号中心</h1>
           <div className="flex gap-2">
             <Link href="/start">
               <Button variant="outline">今日推演</Button>
@@ -184,7 +184,7 @@ export default function AccountPage() {
 
         <Card>
           <CardHeader>
-            <h2 className="text-lg font-song text-(--color-gold-light)">登录状态</h2>
+            <h2 className="text-lg font-song text-gold-light">登录状态</h2>
           </CardHeader>
           <CardContent className="space-y-2">
             {authLoading ? <p className="text-sm text-xuanpaper/70">加载中...</p> : null}
@@ -223,7 +223,7 @@ export default function AccountPage() {
         <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <Card glow>
             <CardHeader>
-              <h2 className="text-lg font-song text-(--color-gold-light)">个人档案</h2>
+              <h2 className="text-lg font-song text-gold-light">个人档案</h2>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid gap-3 md:grid-cols-2">
@@ -232,12 +232,12 @@ export default function AccountPage() {
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   placeholder="姓名"
-                  className="rounded-sm bg-(--color-xuangray) border border-gold-line/40 px-3 py-2 outline-none focus:border-(--color-gold-light)"
+                  className="rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
                 />
                 <select
                   value={gender}
                   onChange={(event) => setGender(event.target.value as "男" | "女")}
-                  className="rounded-sm bg-(--color-xuangray) border border-gold-line/40 px-3 py-2 outline-none focus:border-(--color-gold-light)"
+                  className="rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
                 >
                   <option value="男">男</option>
                   <option value="女">女</option>
@@ -248,20 +248,20 @@ export default function AccountPage() {
                   type="date"
                   value={birthDate}
                   onChange={(event) => setBirthDate(event.target.value)}
-                  className="rounded-sm bg-(--color-xuangray) border border-gold-line/40 px-3 py-2 outline-none focus:border-(--color-gold-light)"
+                  className="rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
                 />
                 <input
                   type="time"
                   value={birthTime}
                   onChange={(event) => setBirthTime(event.target.value)}
-                  className="rounded-sm bg-(--color-xuangray) border border-gold-line/40 px-3 py-2 outline-none focus:border-(--color-gold-light)"
+                  className="rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
                 />
                 <input
                   type="text"
                   value={birthLocation}
                   onChange={(event) => setBirthLocation(event.target.value)}
                   placeholder="出生地"
-                  className="rounded-sm bg-(--color-xuangray) border border-gold-line/40 px-3 py-2 outline-none focus:border-(--color-gold-light)"
+                  className="rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
                 />
               </div>
               <input
@@ -269,35 +269,35 @@ export default function AccountPage() {
                 value={currentResidence}
                 onChange={(event) => setCurrentResidence(event.target.value)}
                 placeholder="现居住地"
-                className="w-full rounded-sm bg-(--color-xuangray) border border-gold-line/40 px-3 py-2 outline-none focus:border-(--color-gold-light)"
+                className="w-full rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
               />
               <input
                 type="text"
                 value={pastResidences}
                 onChange={(event) => setPastResidences(event.target.value)}
                 placeholder="过往居住地（逗号分隔）"
-                className="w-full rounded-sm bg-(--color-xuangray) border border-gold-line/40 px-3 py-2 outline-none focus:border-(--color-gold-light)"
+                className="w-full rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
               />
               <textarea
                 value={experienceNarrative}
                 onChange={(event) => setExperienceNarrative(event.target.value)}
                 placeholder="过往经历"
                 rows={4}
-                className="w-full rounded-sm bg-(--color-xuangray) border border-gold-line/40 px-3 py-2 outline-none focus:border-(--color-gold-light)"
+                className="w-full rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
               />
               <textarea
                 value={currentStatus}
                 onChange={(event) => setCurrentStatus(event.target.value)}
                 placeholder="当前状态"
                 rows={3}
-                className="w-full rounded-sm bg-(--color-xuangray) border border-gold-line/40 px-3 py-2 outline-none focus:border-(--color-gold-light)"
+                className="w-full rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
               />
               <textarea
                 value={futureVision}
                 onChange={(event) => setFutureVision(event.target.value)}
                 placeholder="未来愿景"
                 rows={3}
-                className="w-full rounded-sm bg-(--color-xuangray) border border-gold-line/40 px-3 py-2 outline-none focus:border-(--color-gold-light)"
+                className="w-full rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
               />
               <div className="flex items-center justify-between">
                 <p className="text-xs text-xuanpaper/60">{profileReady ? "档案已达可保存标准" : "请补全必填档案"}</p>
@@ -305,14 +305,14 @@ export default function AccountPage() {
                   {savingProfile ? "保存中..." : "保存档案"}
                 </Button>
               </div>
-              {message ? <p className="text-sm text-(--color-gold-light)">{message}</p> : null}
+              {message ? <p className="text-sm text-gold-light">{message}</p> : null}
             </CardContent>
           </Card>
 
           <div className="space-y-6">
             <Card glow>
               <CardHeader>
-                <h2 className="text-lg font-song text-(--color-gold-light)">档案版本记录</h2>
+                <h2 className="text-lg font-song text-gold-light">档案版本记录</h2>
               </CardHeader>
               <CardContent className="space-y-3">
                 {profileHistory.length === 0 ? <p className="text-sm text-xuanpaper/70">暂无版本记录</p> : null}
@@ -321,9 +321,9 @@ export default function AccountPage() {
                     key={item.id}
                     type="button"
                     onClick={() => applyProfile(item.profile)}
-                    className="w-full text-left rounded-sm border border-gold-line/30 bg-(--color-xuangray)/70 px-3 py-3 hover:border-gold-line/60"
+                    className="w-full text-left rounded-sm border border-gold-line/30 bg-xuangray/70 px-3 py-3 hover:border-gold-line/60"
                   >
-                    <p className="text-sm text-(--color-gold-light)">{formatTime(item.createdAt)}</p>
+                    <p className="text-sm text-gold-light">{formatTime(item.createdAt)}</p>
                     <p className="text-xs text-xuanpaper/70 mt-1">
                       {item.profile.name || "未命名"} · {item.profile.birthDate || "未知日期"} {item.profile.birthTime || ""}
                     </p>
@@ -334,14 +334,14 @@ export default function AccountPage() {
 
             <Card glow>
               <CardHeader>
-                <h2 className="text-lg font-song text-(--color-gold-light)">最近推演</h2>
+                <h2 className="text-lg font-song text-gold-light">最近推演</h2>
               </CardHeader>
               <CardContent className="space-y-2">
                 {casesLoading ? <p className="text-sm text-xuanpaper/70">加载中...</p> : null}
                 {!casesLoading && cases.length === 0 ? <p className="text-sm text-xuanpaper/70">暂无推演记录</p> : null}
                 {cases.slice(0, 8).map((item) => (
                   <Link key={item.id} href="/cases" className="block rounded-sm border border-gold-line/30 px-3 py-2 hover:border-gold-line/60">
-                    <p className="text-sm text-(--color-gold-light)">{item.paradigmLabel}</p>
+                    <p className="text-sm text-gold-light">{item.paradigmLabel}</p>
                     <p className="text-xs text-xuanpaper/70 line-clamp-2">{item.question}</p>
                     <p className="text-xs text-xuanpaper/50 mt-1">{formatTime(item.createdAt)}</p>
                   </Link>

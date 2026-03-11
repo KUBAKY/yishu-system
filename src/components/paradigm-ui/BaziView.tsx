@@ -93,7 +93,7 @@ export function BaziView() {
   return (
     <div className="space-y-8 max-w-md mx-auto">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-song text-(--color-gold-light)">八字排盘</h2>
+        <h2 className="text-2xl font-song text-gold-light">八字排盘</h2>
         <p className="text-xuanpaper/60">输入生辰八字，洞察先天格局与岁运起伏</p>
       </div>
 

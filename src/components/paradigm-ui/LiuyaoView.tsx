@@ -115,7 +115,7 @@ export function LiuyaoView() {
   return (
     <div className="space-y-8 text-center max-w-md mx-auto">
       <div className="space-y-2">
-        <h2 className="text-2xl font-song text-(--color-gold-light)">六爻金钱课</h2>
+        <h2 className="text-2xl font-song text-gold-light">六爻金钱课</h2>
         <p className="text-xuanpaper/60">诚心摇卦六次，生成本卦与变卦</p>
       </div>
 

@@ -112,7 +112,7 @@ export function MeihuaView() {
   return (
     <div className="space-y-8 text-center max-w-md mx-auto">
       <div className="space-y-2">
-        <h2 className="text-2xl font-song text-(--color-gold-light)">梅花易数</h2>
+        <h2 className="text-2xl font-song text-gold-light">梅花易数</h2>
         <p className="text-xuanpaper/60">观物起卦，心易神动，捕捉天地外应</p>
       </div>
 

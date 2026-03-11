@@ -9,7 +9,7 @@ export function Card({ className, glow = false, children, ...props }: CardProps)
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-(--color-xuangray)/95 border border-gold-line/35 p-6 transition-all duration-300 backdrop-blur-sm",
+        "relative overflow-hidden rounded-2xl bg-xuangray/95 border border-gold-line/35 p-6 transition-all duration-300 backdrop-blur-sm",
         glow && "shadow-[0_0_24px_rgba(140,106,42,0.18)] hover:shadow-[0_0_36px_rgba(140,106,42,0.28)]",
         className
       )}

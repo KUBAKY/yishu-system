@@ -59,7 +59,7 @@ export default async function ParadigmPage({
   }
 
   return (
-    <main className="min-h-screen bg-(--color-xuanqing) text-(--color-xuanpaper) px-6 py-12 flex flex-col justify-between">
+    <main className="min-h-screen bg-xuanqing text-xuanpaper px-6 py-12 flex flex-col justify-between">
       <div className="flex-1 flex flex-col items-center justify-center w-full">
         {id === "tarot" ? (
           <TarotView />

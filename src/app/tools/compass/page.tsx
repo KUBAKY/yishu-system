@@ -106,10 +106,10 @@ export default function CompassToolPage() {
   };
 
   return (
-    <main className="min-h-screen bg-(--color-xuanqing) text-(--color-xuanpaper) px-6 py-12 overflow-hidden">
+    <main className="min-h-screen bg-xuanqing text-xuanpaper px-6 py-12 overflow-hidden">
       <div className="max-w-2xl mx-auto space-y-8 flex flex-col items-center">
         <div className="w-full flex items-center justify-between">
-            <h1 className="text-3xl font-song text-(--color-gold-light)">电子罗盘</h1>
+            <h1 className="text-3xl font-song text-gold-light">电子罗盘</h1>
              <Link href="/">
               <Button variant="outline" size="sm">返回</Button>
             </Link>
@@ -136,7 +136,7 @@ export default function CompassToolPage() {
                         className="absolute top-0 left-1/2 -translate-x-1/2 h-full flex flex-col justify-between py-8 pointer-events-none"
                         style={{ transform: `rotate(${angle}deg)` }}
                      >
-                        <span className="text-2xl font-song font-bold text-(--color-gold-light) rotate-180">{t.name}</span>
+                        <span className="text-2xl font-song font-bold text-gold-light rotate-180">{t.name}</span>
                         {/* Opposite side logic handled by mapping all 8 */}
                      </div>
                  )
@@ -165,7 +165,7 @@ export default function CompassToolPage() {
           
            {/* Current Heading Display */}
            <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 text-center w-full">
-              <p className="text-4xl font-mono text-(--color-gold-light)">{Math.round(heading)}°</p>
+              <p className="text-4xl font-mono text-gold-light">{Math.round(heading)}°</p>
               <p className="text-lg text-xuanpaper/80 mt-1 font-song">
                   {getTrigram(heading)}宫 · {getMountain(heading)}山
               </p>
@@ -188,7 +188,7 @@ export default function CompassToolPage() {
                         type="checkbox" 
                         checked={manualMode} 
                         onChange={(e) => setManualMode(e.target.checked)}
-                        className="accent-(--color-gold-light)"
+                        className="accent-gold-light"
                     />
                 </div>
                 {manualMode && (
@@ -198,7 +198,7 @@ export default function CompassToolPage() {
                         max="360" 
                         value={heading} 
                         onChange={(e) => setHeading(Number(e.target.value))}
-                        className="w-full accent-(--color-gold-light)"
+                        className="w-full accent-gold-light"
                     />
                 )}
             </div>

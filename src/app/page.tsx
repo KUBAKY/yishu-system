@@ -119,11 +119,11 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-(--color-xuanqing) selection:bg-(--color-gold-dark) selection:text-white">
+    <div className="min-h-screen bg-xuanqing selection:bg-gold-dark selection:text-white">
       {/* 背景微光效果 */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-(--color-gold-glow) blur-[120px] opacity-20" />
-        <div className="absolute bottom-[20%] -right-[10%] w-[30%] h-[30%] bg-(--color-zhusha) blur-[150px] opacity-10" />
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-gold-glow blur-[120px] opacity-20" />
+        <div className="absolute bottom-[20%] -right-[10%] w-[30%] h-[30%] bg-zhusha blur-[150px] opacity-10" />
       </div>
 
       <main className="relative z-10 max-w-lg mx-auto px-6 pt-20 pb-32 flex flex-col gap-12">
@@ -132,7 +132,7 @@ export default function Home() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-seal text-(--color-gold-light) tracking-widest"
+            className="text-4xl md:text-5xl font-seal text-gold-light tracking-widest"
           >
             易 枢
           </motion.h1>
@@ -148,7 +148,7 @@ export default function Home() {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="w-16 h-px bg-(--color-gold-line) mx-auto mt-6"
+            className="w-16 h-px bg-gold-line mx-auto mt-6"
           />
         </section>
 
@@ -170,7 +170,7 @@ export default function Home() {
                   <div className={cn("p-2 rounded-sm bg-white/5 group-hover:bg-white/10 transition-colors", item.color)}>
                     <item.icon size={24} />
                   </div>
-                  <h2 className="text-xl font-song text-(--color-gold-light)">{item.title}</h2>
+                  <h2 className="text-xl font-song text-gold-light">{item.title}</h2>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm font-kai">{item.desc}</p>
@@ -208,7 +208,7 @@ export default function Home() {
       </main>
 
       {/* 极简底部导航/声明 */}
-      <footer className="fixed bottom-0 left-0 right-0 p-6 text-center z-20 bg-linear-to-t from-(--color-xuanqing) to-transparent">
+      <footer className="fixed bottom-0 left-0 right-0 p-6 text-center z-20 bg-linear-to-t from-xuanqing to-transparent">
         <p className="text-[10px] text-xuanpaper/30 font-kai">
           易枢 · 遵法古籍 · 智取其枢
         </p>

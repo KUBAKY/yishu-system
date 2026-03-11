@@ -115,7 +115,7 @@ export function TarotView() {
   return (
     <div className="space-y-8 text-center">
       <div className="space-y-2">
-        <h2 className="text-2xl font-song text-(--color-gold-light)">塔罗三牌阵</h2>
+        <h2 className="text-2xl font-song text-gold-light">塔罗三牌阵</h2>
         <p className="text-xuanpaper/60">默念心中困惑，抽取三张牌指引方向</p>
       </div>
 

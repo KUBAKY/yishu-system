@@ -70,10 +70,10 @@ export default function MembershipPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-(--color-xuanqing) text-(--color-xuanpaper) px-6 py-12">
+    <main className="min-h-screen bg-xuanqing text-xuanpaper px-6 py-12">
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-song text-(--color-gold-light)">会员权益</h1>
+          <h1 className="text-3xl font-song text-gold-light">会员权益</h1>
           <Link href="/account">
             <Button variant="outline">返回账号</Button>
           </Link>
@@ -84,22 +84,22 @@ export default function MembershipPage() {
             <Card 
               key={plan.id} 
               glow={plan.active} 
-              className={`relative flex flex-col ${plan.active ? "border-(--color-gold-light) bg-(--color-gold-glow)/5" : ""}`}
+              className={`relative flex flex-col ${plan.active ? "border-gold-light bg-gold-glow/5" : ""}`}
             >
               {plan.active && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-(--color-gold-light) text-black text-xs px-3 py-1 rounded-full font-bold">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold-light text-black text-xs px-3 py-1 rounded-full font-bold">
                   当前生效
                 </div>
               )}
               <CardHeader>
-                <h2 className="text-xl font-song text-(--color-gold-light)">{plan.title}</h2>
+                <h2 className="text-xl font-song text-gold-light">{plan.title}</h2>
                 <p className="text-2xl mt-2 font-mono">{plan.price}</p>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col justify-between space-y-6">
                 <ul className="space-y-3">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-2 text-sm text-xuanpaper/80">
-                      <span className="text-(--color-gold-light)">✓</span>
+                      <span className="text-gold-light">✓</span>
                       {feature}
                     </li>
                   ))}
@@ -127,7 +127,7 @@ export default function MembershipPage() {
 
         <Card>
           <CardContent className="p-6">
-            <h3 className="font-song text-(--color-gold-light) mb-2">说明</h3>
+            <h3 className="font-song text-gold-light mb-2">说明</h3>
             <ul className="list-disc list-inside text-sm text-xuanpaper/70 space-y-1">
               <li>新用户注册即自动激活3个月试用会员。</li>
               <li>试用期结束后，账户将转为“到期态”，可查看历史记录但无法新增推演。</li>
