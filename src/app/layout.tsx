@@ -20,6 +20,10 @@ export const metadata: Metadata = {
   description: "易枢智能术数推演系统，提供多范式术数入口与可解释推演体验。",
 };
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ToastProvider } from "@/components/ui/Toast";
+import { TabBar } from "@/components/ui/TabBar";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,7 +34,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ErrorBoundary>
+          <ToastProvider>
+            {children}
+            <TabBar />
+          </ToastProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

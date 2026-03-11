@@ -94,8 +94,7 @@ export default function DailyFortune({ userName, userPhone, authenticated, onSta
       </Button>
       <CardContent className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="p-5 bg-black/20 rounded-xl border border-gold-line/20 flex flex-col items-center justify-center text-center space-y-2 relative overflow-hidden group hover:border-gold-line/40 transition-colors">
-            <div className="absolute inset-0 bg-gradient-to-br from-gold-glow/5 to-transparent pointer-events-none" />
+          <div className="relative mb-12 overflow-hidden rounded-2xl bg-linear-to-br from-blue-900 via-indigo-900 to-purple-900 p-8 shadow-2xl">
             <p className="text-xuanpaper/60 text-xs tracking-widest uppercase">Today&apos;s Energy</p>
             <p className="text-5xl font-song text-gold-light drop-shadow-md group-hover:scale-105 transition-transform duration-500">{dailyFortune.level}</p>
             <p className="text-sm text-xuanpaper/80 italic font-kai">“{dailyFortune.quote}”</p>

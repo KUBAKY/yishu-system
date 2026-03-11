@@ -1,3 +1,4 @@
+import { inferenceLimit } from "@/lib/rate-limiter";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { retrieveClassicalCitations } from "@/lib/classical-references";
@@ -11,6 +12,9 @@ import { validateMode, validateProfile, validateForecastWindow, resolveAngles, v
 import { callOpenRouter, normalizeResponseContent, hasInstitutionalStructure } from "@/lib/inference/llm-client";
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for") || "unknown";
+  const { allowed } = inferenceLimit.check(ip, { windowMs: 60000, maxRequests: 10 });
+  if (!allowed) return NextResponse.json({ error: "请求频率过高，请稍后再试" }, { status: 429 });
   const cookieStore = await cookies();
   const token = cookieStore.get("yishu_session")?.value;
   const user = token ? await resolveSession(token) : null;

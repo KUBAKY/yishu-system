@@ -5,8 +5,7 @@ import { AuthUser, Membership, UserProfile } from "@/types/auth";
 
 const scrypt = promisify(scryptCallback);
 
-// SMS Code Store (In-memory for MVP, could use Redis/DB later)
-const codeStore = new Map<string, { code: string; expiresAt: number }>();
+// SMS Code Store is now managed by Prisma
 
 function sanitizePhone(phone: string) {
   return phone.replace(/\s+/g, "");
@@ -53,7 +52,7 @@ function resolveMembership(user: { trialEndsAt: Date | null; subscriptionEndsAt:
   return "expired";
 }
 
-function toAuthUser(user: any): AuthUser {
+function toAuthUser(user: Record<string, any>): AuthUser {
   const hasProfile = user.name && user.birthDate && user.birthTime && user.birthLocation;
   
   let profile: UserProfile | undefined;
@@ -121,36 +120,63 @@ function sanitizeProfile(profileInput: UserProfile): UserProfile {
 }
 
 // SMS Logic
-export function createSmsCode(phoneInput: string) {
+export async function createSmsCode(phoneInput: string) {
   const phone = sanitizePhone(phoneInput);
   if (!validPhone(phone)) throw new Error("手机号格式错误");
   
+  // Clean up any old invalid codes for this phone
+  await prisma.smsCode.deleteMany({
+    where: { 
+      phone,
+      OR: [
+        { verified: true },
+        { expiresAt: { lt: new Date() } }
+      ]
+    }
+  });
+
   const code = `${randomInt(100000, 1000000)}`;
-  const expiresAt = Date.now() + 5 * 60 * 1000;
-  codeStore.set(phone, { code, expiresAt });
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+  
+  await prisma.smsCode.create({
+    data: {
+      phone,
+      code,
+      expiresAt
+    }
+  });
+
   return { phone, code };
 }
 
-function verifySmsCode(phoneInput: string, codeInput: string) {
+async function verifySmsCode(phoneInput: string, codeInput: string) {
   const phone = sanitizePhone(phoneInput);
   const code = codeInput.trim();
   if (!validPhone(phone)) throw new Error("手机号格式错误");
   if (!/^\d{6}$/.test(code)) throw new Error("验证码格式错误");
 
-  const existing = codeStore.get(phone);
+  const existing = await prisma.smsCode.findFirst({
+    where: { phone, code, verified: false },
+    orderBy: { createdAt: 'desc' }
+  });
+
   if (!existing) throw new Error("验证码不存在，请重新发送");
-  if (existing.expiresAt < Date.now()) {
-    codeStore.delete(phone);
+  if (existing.expiresAt.getTime() < Date.now()) {
+    await prisma.smsCode.delete({ where: { id: existing.id } });
     throw new Error("验证码已过期，请重新发送");
   }
-  if (existing.code !== code) throw new Error("验证码错误");
   
-  codeStore.delete(phone);
+  // Mark as verified to prevent reuse
+  await prisma.smsCode.update({
+    where: { id: existing.id },
+    data: { verified: true }
+  });
+  
   return phone;
 }
 
 // Session Logic
-async function createSessionByUser(user: any) {
+async function createSessionByUser(user: Record<string, any>) {
   // Clean up expired sessions for this user (optional but good practice)
   await prisma.session.deleteMany({
     where: {
@@ -178,7 +204,7 @@ async function createSessionByUser(user: any) {
 
 // Main Auth Functions
 export async function registerByCodeAndPassword(phoneInput: string, codeInput: string, passwordInput: string) {
-  const phone = verifySmsCode(phoneInput, codeInput);
+  const phone = await verifySmsCode(phoneInput, codeInput);
   const password = validatePassword(passwordInput);
 
   const existingUser = await prisma.user.findUnique({ where: { phone } });
@@ -222,7 +248,7 @@ export async function createSessionByPassword(phoneInput: string, passwordInput:
 }
 
 export async function createSessionByCode(phoneInput: string, codeInput: string) {
-  const phone = verifySmsCode(phoneInput, codeInput);
+  const phone = await verifySmsCode(phoneInput, codeInput);
   
   let user = await prisma.user.findUnique({ where: { phone } });
   if (!user) {
@@ -303,7 +329,7 @@ export async function upsertUserProfile(userId: string, profileInput: UserProfil
   return toAuthUser(user);
 }
 
-export async function readProfileHistory(userId: string): Promise<any[]> {
+export async function readProfileHistory(_userId: string): Promise<Record<string, any>[]> {
   // Not implemented in DB yet. Return empty array or implement if schema added.
   return [];
 }

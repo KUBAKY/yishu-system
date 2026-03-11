@@ -1,3 +1,4 @@
+import { authLimit } from "@/lib/rate-limiter";
 import { NextRequest, NextResponse } from "next/server";
 import { createSessionByPassword } from "@/lib/auth-store";
 

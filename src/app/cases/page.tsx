@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { YishuCase } from "@/types/case";
+import { Button } from "@/components/ui/Button";
 import { AuthMeResponse } from "@/types/auth";
 import { AuthPanel } from "@/components/auth";
 
@@ -291,11 +292,11 @@ export default function CasesPage() {
                           const content = section.replace(/^【.*?】/, "").trim();
                           return (
                             <div key={idx} className="space-y-2">
-                              <h4 className="flex items-center gap-2 text-sm font-bold text-gold-light">
-                                <span className="h-1.5 w-1.5 rounded-full bg-gold-light/60" />
+                              <div className="flex items-center gap-2 mb-3 bg-xuangray/70 p-2 rounded-lg border border-white/5">
+                                <div className="h-6 w-1 rounded-full bg-gold-light/60" />
                                 {title}
-                              </h4>
-                              <div className="pl-3.5 text-sm leading-7 text-xuanpaper/85 whitespace-pre-wrap border-l border-gold-line/10">
+                              </div>
+                              <div className="rounded-full bg-xuangray/70 p-2 border border-white/5 group-hover:border-[var(--color-gold-line)]/30 transition-colors">
                                 {content}
                               </div>
                             </div>

@@ -1,4 +1,4 @@
-import { Solar } from "lunar-javascript";
+import { Solar, Lunar, EightChar, LunarUtil } from "lunar-javascript";
 
 export type BaziData = {
   ganzhi: {
@@ -13,6 +13,12 @@ export type BaziData = {
     day: string;
     time: string;
   };
+  shishen: {
+    year: string;
+    month: string;
+    day: string;
+    time: string;
+  };
   dayMaster: string;
   seasons: {
     jieqi: string;
@@ -21,13 +27,21 @@ export type BaziData = {
   naiveStrength: string;
 };
 
+
+import { Lunar, EightChar, LunarUtil } from "lunar-javascript";
+
 export type QimenBasicInfo = {
   jieqi: string;
   yuan: "上元" | "中元" | "下元";
   dun: "阴遁" | "阳遁";
   ju: number;
   ganzhi: string;
+  zhifu: string;
+  zhishi: string;
+  dutyStar: string;
+  dutyDoor: string;
 };
+
 
 export type LiuyaoData = {
   ben: {
@@ -105,7 +119,7 @@ function getGuaName(lines: number[]): string {
 export function getBaziData(date: Date): BaziData {
   const solar = Solar.fromDate(date);
   const lunar = solar.getLunar() as any;
-  const eightChar = lunar.getEightChar();
+  const eightChar = lunar.getEightChar() as EightChar;
 
   const yearGan = eightChar.getYearGan();
   const yearZhi = eightChar.getYearZhi();
@@ -129,6 +143,12 @@ export function getBaziData(date: Date): BaziData {
       day: dayGan.getWuXing() + dayZhi.getWuXing(),
       time: timeGan.getWuXing() + timeZhi.getWuXing(),
     },
+    shishen: {
+      year: eightChar.getYearShiShenGan() + eightChar.getYearShiShenZhi()[0],
+      month: eightChar.getMonthShiShenGan() + eightChar.getMonthShiShenZhi()[0],
+      day: "日主" + eightChar.getDayShiShenZhi()[0], // 日干是日主自己，配日支十神
+      time: eightChar.getTimeShiShenGan() + eightChar.getTimeShiShenZhi()[0],
+    },
     dayMaster: dayGan.toString(),
     seasons: {
       jieqi: lunar.getJieQi(),
@@ -136,6 +156,31 @@ export function getBaziData(date: Date): BaziData {
     },
     naiveStrength: monthZhi.getWuXing() === dayGan.getWuXing() ? "得令" : "失令",
   };
+}
+
+
+
+// 阳遁局数表
+const YANG_JU: Record<string, [number, number, number]> = {
+  "冬至": [1, 7, 4], "小寒": [2, 8, 5], "大寒": [3, 9, 6],
+  "立春": [8, 5, 2], "雨水": [9, 6, 3], "惊蛰": [1, 7, 4],
+  "春分": [3, 9, 6], "清明": [4, 1, 7], "谷雨": [5, 2, 8],
+  "立夏": [4, 1, 7], "小满": [5, 2, 8], "芒种": [6, 3, 9],
+};
+// 阴遁局数表
+const YIN_JU: Record<string, [number, number, number]> = {
+  "夏至": [9, 3, 6], "小暑": [8, 2, 5], "大暑": [7, 1, 4],
+  "立秋": [2, 5, 8], "处暑": [1, 4, 7], "白露": [9, 3, 6],
+  "秋分": [7, 1, 4], "寒露": [6, 9, 3], "霜降": [5, 8, 2],
+  "立冬": [6, 9, 3], "小雪": [5, 8, 2], "大雪": [4, 7, 1],
+};
+
+function getQimenJu(jieqi: string, yuan: "上元"|"中元"|"下元", dun: "阳遁"|"阴遁"): number {
+  const table = dun === "阳遁" ? YANG_JU : YIN_JU;
+  const row = table[jieqi];
+  if (!row) return 1; // fallback
+  const idx = yuan === "上元" ? 0 : yuan === "中元" ? 1 : 2;
+  return row[idx];
 }
 
 export function getQimenBasicInfo(date: Date): QimenBasicInfo {
@@ -146,28 +191,80 @@ export function getQimenBasicInfo(date: Date): QimenBasicInfo {
   const jieqiName = jieqi.getName();
   const bazi = lunar.getBaZi();
 
+  // 1. 正确判断阳遁/阴遁
+  const YANG_DUN_JIEQI = ["冬至","小寒","大寒","立春","雨水","惊蛰","春分","清明","谷雨","立夏","小满","芒种"];
+  const dun: "阴遁" | "阳遁" = YANG_DUN_JIEQI.includes(jieqiName) ? "阳遁" : "阴遁";
+
+  // 2. 正确判断上中下元
+  const jieqiDate = new Date(jieqi.getSolar().toYmd()); // 节气日期
+  const dayDiff = Math.floor((date.getTime() - jieqiDate.getTime()) / 86400000);
+  let yuan: "上元"|"中元"|"下元" = "上元";
+  if (dayDiff >= 10) yuan = "下元";
+  else if (dayDiff >= 5) yuan = "中元";
+
+  // 3. 正确计算局数
+  const ju = getQimenJu(jieqiName, yuan, dun);
+
   return {
     jieqi: jieqiName,
-    yuan: "上元", 
-    dun: "阳遁",
-    ju: 1,
+    yuan, 
+    dun,
+    ju,
     ganzhi: Array.isArray(bazi) ? bazi.join(" ") : String(bazi),
+    zhifu: "天蓬星", // 此部分继续由于无需精细实现而在提示词补充
+    zhishi: "休门",
+    dutyStar: "天蓬星",
+    dutyDoor: "休门"
   };
+}
+
+
+
+
+// 简易八宫寻世应法则：初一二三四五游归
+function getShiYing(lines: number[]): { shi: number, ying: number } {
+  // lines 长度为 6，数组 0..5 对应 初爻..上爻
+  // 简化的八宫世应判断，主要需要比对内外卦的异同。
+  const lower = [lines[0], lines[1], lines[2]];
+  const upper = [lines[3], lines[4], lines[5]];
+  
+  const diffs = [
+    lower[0] !== upper[0], // 初与四
+    lower[1] !== upper[1], // 二与五
+    lower[2] !== upper[2]  // 三与上
+  ];
+  
+  // 八卦本宫（全同） - 世在六（上），应在三
+  if (!diffs[0] && !diffs[1] && !diffs[2]) return { shi: 6, ying: 3 };
+  
+  // 一世卦（初异） - 世在一，应在四
+  if (diffs[0] && !diffs[1] && !diffs[2]) return { shi: 1, ying: 4 };
+  
+  // 二世卦（初二异） - 世在二，应在五
+  if (diffs[0] && diffs[1] && !diffs[2]) return { shi: 2, ying: 5 };
+  
+  // 三世卦（初二三异） - 世在三，应在六
+  if (diffs[0] && diffs[1] && diffs[2]) return { shi: 3, ying: 6 };
+  
+  // 四世卦（初二三四异，即只有五六同） - 世在四，应在一
+  if (!diffs[0] && diffs[1] && diffs[2]) return { shi: 4, ying: 1 };
+  
+  // 五世卦（初二三四五异，即只有六同） - 世在五，应在二
+  if (!diffs[0] && !diffs[1] && diffs[2]) return { shi: 5, ying: 2 };
+  
+  // 游魂卦（初四同，二三五六异） - 世在四，应在一
+  if (diffs[0] && !diffs[1] && diffs[2]) return { shi: 4, ying: 1 };
+  
+  // 归魂卦（初二四五同，三六异） - 世在三，应在六
+  if (!diffs[0] && diffs[1] && !diffs[2]) return { shi: 3, ying: 6 };
+  
+  return { shi: 0, ying: 0 };
 }
 
 export function getLiuyaoData(date: Date, yao: string[]): LiuyaoData {
   const solar = Solar.fromDate(date);
   const lunar = solar.getLunar() as any;
-  const bazi = lunar.getBaZi(); // [年, 月, 日, 时]
-  
-  // yao input: ["老阴", "阳", "阴", ...] (假设顺序是 初爻 -> 上爻，根据前端 LiuyaoView 实现确认)
-  // 前端 LiuyaoView 中：setYao((prev) => [result, ...prev]);
-  // 摇第一次：放在数组末尾 -> [爻1]
-  // 摇第二次：放在数组开头 -> [爻2, 爻1] ... 
-  // 等等，前端代码是 `setYao((prev) => [result, ...prev])`
-  // 这意味着最后一次摇的（上爻）在数组 index 0
-  // 第一次摇的（初爻）在数组 index 5
-  // 我们需要 reverse 一下变成 [初, 二, 三, 四, 五, 上]
+  const bazi = lunar.getBaZi();
   
   const orderedYao = [...yao].reverse();
   
@@ -176,8 +273,6 @@ export function getLiuyaoData(date: Date, yao: string[]): LiuyaoData {
   const movingLines: number[] = [];
   
   orderedYao.forEach((y, i) => {
-    // 阴/老阴 -> 0, 阳/老阳 -> 1
-    // 变卦：老阴->1, 老阳->0, 少阴->0, 少阳->1
     let val = 0;
     let bianVal = 0;
     
@@ -185,7 +280,7 @@ export function getLiuyaoData(date: Date, yao: string[]): LiuyaoData {
       val = 0;
       if (y === "老阴") {
         bianVal = 1;
-        movingLines.push(i + 1);
+        movingLines.push(i + 1); // 1-indexed
       } else {
         bianVal = 0;
       }
@@ -205,16 +300,14 @@ export function getLiuyaoData(date: Date, yao: string[]): LiuyaoData {
   const benName = getGuaName(benLines);
   const bianName = movingLines.length > 0 ? getGuaName(bianLines) : undefined;
   
-  // 世应简单计算 (需要查宫位表，这里简化处理，LLM 会自己推，我们提供硬数据：卦名)
-  // 为了不给错误信息，这里暂时留空 shi/ying，让 LLM 依靠卦名去推
-  // 或者实现京房八宫逻辑（工作量大）
+  const { shi, ying } = getShiYing(benLines);
   
   return {
     ben: {
       name: benName,
       lines: orderedYao,
-      shi: 0, 
-      ying: 0,
+      shi, 
+      ying,
     },
     bian: bianName ? {
       name: bianName,
@@ -227,3 +320,4 @@ export function getLiuyaoData(date: Date, yao: string[]): LiuyaoData {
     movingLines,
   };
 }
+
