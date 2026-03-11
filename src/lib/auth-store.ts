@@ -228,6 +228,33 @@ export async function registerByCodeAndPassword(phoneInput: string, codeInput: s
   return createSessionByUser(newUser);
 }
 
+export async function registerByPassword(phoneInput: string, passwordInput: string) {
+  const phone = sanitizePhone(phoneInput);
+  if (!validPhone(phone)) throw new Error("手机号格式错误");
+
+  const password = validatePassword(passwordInput);
+
+  const existingUser = await prisma.user.findUnique({ where: { phone } });
+  if (existingUser) {
+    throw new Error("手机号已注册，请直接登录");
+  }
+
+  const hashedPassword = await hashPassword(password);
+  const now = new Date();
+  const trialEndsAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days trial
+
+  const newUser = await prisma.user.create({
+    data: {
+      phone,
+      password: hashedPassword,
+      trialEndsAt,
+      createdAt: now,
+    },
+  });
+
+  return createSessionByUser(newUser);
+}
+
 export async function createSessionByPassword(phoneInput: string, passwordInput: string) {
   const phone = sanitizePhone(phoneInput);
   if (!validPhone(phone)) throw new Error("手机号格式错误");
@@ -288,10 +315,19 @@ export async function removeSession(token: string) {
 export async function resolveSession(token: string): Promise<AuthUser | null> {
   if (!token) return null;
 
-  const session = await prisma.session.findUnique({
-    where: { sessionToken: token },
-    include: { user: true },
-  });
+  let session: { id: string; expires: Date; user: Record<string, any> } | null = null;
+  try {
+    session = await prisma.session.findUnique({
+      where: { sessionToken: token },
+      include: { user: true },
+    });
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[auth] resolveSession failed:", error);
+      return null;
+    }
+    throw error;
+  }
 
   if (!session) return null;
 

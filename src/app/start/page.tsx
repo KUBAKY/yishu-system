@@ -7,28 +7,16 @@ import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { AuthMeResponse, UserProfile } from "@/types/auth";
 import { InferenceResponse, ResultSections, AnalysisMode, ForecastWindow, Step, ReportView } from "@/types/inference";
-import { SaveProfileResponse, AuthResponse, SendCodeResponse, AuthMode } from "@/types/api-responses";
+import { SaveProfileResponse } from "@/types/api-responses";
 import { AuthPanel } from "@/components/auth";
 import { DailyFortune, ProfileForm, StepIndicator, ExpertTeam, ReportDisplay, DeductionForm, PARADIGMS, ANGLE_OPTIONS, QUICK_LOCATIONS } from "@/components/start";
+import { toInputDateTime } from "@/lib/utils";
 
 const DRAFT_KEY = "yishu:start:draft:v1";
 const LAST_REPORT_KEY = "yishu:start:last-report:v1";
 const EXPERIENCE_TEMPLATE = `建议包含：\n1. 成长背景与关键转折\n2. 学习/职业的重要阶段\n3. 创业或工作中的高低点\n4. 影响你决策风格的事件`;
 const STATUS_TEMPLATE = `建议包含：\n1. 收入、负债与现金流压力\n2. 家庭关系与主要责任\n3. 当前最焦虑的现实问题`;
 const VISION_TEMPLATE = `建议包含：\n1. 1年内最想达成的结果\n2. 3年内的职业与财富目标\n3. 你愿意持续投入的方向`;
-
-function toInputDateTime(iso: string) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  const y = date.getFullYear();
-  const m = `${date.getMonth() + 1}`.padStart(2, "0");
-  const d = `${date.getDate()}`.padStart(2, "0");
-  const h = `${date.getHours()}`.padStart(2, "0");
-  const min = `${date.getMinutes()}`.padStart(2, "0");
-  return `${y}-${m}-${d}T${h}:${min}`;
-}
 
 function parseResultSections(content: string): ResultSections {
   const normalized = content.replace(/\r\n/g, "\n");
@@ -160,7 +148,6 @@ function StartPageContent() {
   const canNextStep2 = currentTime.length > 0;
   const completeCount = [profileReady, canNextStep2, modeReady].filter(Boolean).length;
   const completionRate = Math.round((completeCount / 3) * 100);
-  const activeStepCopy = STEP_CONFIG.find((item) => item.step === step);
   const modeLabel = {
     event: "具体事件",
     natal: "整体命盘",
@@ -375,62 +362,6 @@ function StartPageContent() {
     void loadAuthState();
   }, [loadAuthState]);
 
-      const message = data.devCode
-        ? `验证码已发送（开发环境验证码：${data.devCode}）`
-        : "验证码已发送，请查收短信";
-      setAuthMessage(message);
-    } catch (sendError) {
-      setAuthMessage(sendError instanceof Error ? sendError.message : "发送失败");
-    } finally {
-      setSendingCode(false);
-    }
-  }
-
-  function switchAuthMode(mode: AuthMode) {
-    setAuthMode(mode);
-    setAuthMessage("");
-    setSmsCode("");
-    setRegisterPassword("");
-    setConfirmPassword("");
-    setLoginPassword("");
-  }
-
-      setAuth({ authenticated: true, user: data.user });
-      if (data.user.profile) {
-        applyProfile(data.user.profile);
-        setProfileStatus("已加载登录档案");
-      }
-      setSmsCode("");
-      setRegisterPassword("");
-      setConfirmPassword("");
-      setAuthMessage("注册成功，已自动登录");
-    } catch (verifyError) {
-      setAuthMessage(verifyError instanceof Error ? verifyError.message : "注册失败");
-    } finally {
-      setRegistering(false);
-    }
-  }
-
-      setAuth({ authenticated: true, user: data.user });
-      if (data.user.profile) {
-        applyProfile(data.user.profile);
-        setProfileStatus("已加载登录档案");
-      }
-      setLoginPassword("");
-      setAuthMessage("登录成功");
-    } catch (loginError) {
-      setAuthMessage(loginError instanceof Error ? loginError.message : "登录失败");
-    } finally {
-      setLoggingIn(false);
-    }
-  }
-
-  async function onLogout() {
-    setAuthMessage("");
-    await fetch("/api/auth/logout", { method: "POST" });
-    setAuth({ authenticated: false });
-  }
-
   async function onSaveProfile() {
     if (!auth.authenticated) {
       setProfileStatus("请先登录再保存档案");
@@ -473,8 +404,7 @@ function StartPageContent() {
     }
   }
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function startDeduction() {
     setError("");
     setLoading(true);
     setSaveStatus("idle");
@@ -557,7 +487,7 @@ function StartPageContent() {
       setResult({
           result: "",
           meta: {
-            paradigm: paradigmSpec,
+            paradigm,
             paradigmLabel: modeLabel,
             model: "streaming...",
             reference: "",
@@ -575,8 +505,7 @@ function StartPageContent() {
           if (done) break;
           
           const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("
-").filter(line => line.trim() !== "");
+          const lines = chunk.split(/\r?\n/).filter((line) => line.trim() !== "");
           
           for (const line of lines) {
             if (line.startsWith("data: ") && line !== "data: [DONE]") {
@@ -605,7 +534,7 @@ function StartPageContent() {
       const data = {
           result: streamResult,
           meta: {
-              paradigm: paradigmSpec,
+              paradigm,
               paradigmLabel: modeLabel,
               model: "anthropic/claude-3.5-sonnet",
               reference: "",
@@ -655,6 +584,11 @@ function StartPageContent() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void startDeduction();
   }
 
   function moveStep(next: Step) {
@@ -754,13 +688,7 @@ function StartPageContent() {
                 <h2 className="text-lg font-song text-gold-light">参数详情</h2>
               </CardHeader>
               <CardContent>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    startDeduction();
-                  }}
-                  className="space-y-6"
-                >
+                <form onSubmit={onSubmit} className="space-y-6">
                   {step === 1 ? (
                     <div className="space-y-4">
                       <div className="space-y-2">

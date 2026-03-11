@@ -33,12 +33,13 @@ export function AuthPanel({
   const [registering, setRegistering] = useState<boolean>(false);
   const [loggingIn, setLoggingIn] = useState<boolean>(false);
 
-  const canSendCode = phone.trim().length === 11 && !sendingCode;
+  const smsDisabled = process.env.NODE_ENV !== "production";
+  const canSendCode = !smsDisabled && phone.trim().length === 11 && !sendingCode;
   const canRegister =
     phone.trim().length === 11 &&
-    smsCode.trim().length === 6 &&
     registerPassword.trim().length >= 6 &&
     registerPassword === confirmPassword &&
+    (smsDisabled || smsCode.trim().length === 6) &&
     !registering;
   const loginBlockedReason =
     phone.trim().length !== 11
@@ -88,7 +89,7 @@ export function AuthPanel({
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, code: smsCode, password: registerPassword }),
+        body: JSON.stringify(smsDisabled ? { phone, password: registerPassword } : { phone, code: smsCode, password: registerPassword }),
       });
       const data = (await response.json()) as AuthResponse;
       if (!response.ok || "error" in data) {
@@ -178,7 +179,7 @@ export function AuthPanel({
                 placeholder="登录密码"
                 className="w-full rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
               />
-            ) : (
+            ) : smsDisabled ? null : (
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -211,7 +212,9 @@ export function AuthPanel({
                   className="rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
                 />
               </div>
-              <p className="text-xs text-xuanpaper/60">开发期短信验证码为占位验证，线上可接真实短信网关。</p>
+              <p className="text-xs text-xuanpaper/60">
+                {smsDisabled ? "开发阶段免短信验证码。" : "短信验证码用于校验手机号。"}
+              </p>
               <Button variant="primary" onClick={onRegister} disabled={!canRegister}>
                 {registering ? "注册中..." : "注册并登录"}
               </Button>

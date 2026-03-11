@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { registerByCodeAndPassword } from "@/lib/auth-store";
+import { registerByCodeAndPassword, registerByPassword } from "@/lib/auth-store";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  const smsDisabled = process.env.NODE_ENV !== "production";
   let payload: { phone?: string; code?: string; password?: string };
   try {
     payload = (await request.json()) as { phone?: string; code?: string; password?: string };
@@ -14,15 +15,17 @@ export async function POST(request: NextRequest) {
   if (!payload.phone || typeof payload.phone !== "string") {
     return NextResponse.json({ error: "手机号不能为空" }, { status: 400 });
   }
-  if (!payload.code || typeof payload.code !== "string") {
-    return NextResponse.json({ error: "验证码不能为空" }, { status: 400 });
-  }
   if (!payload.password || typeof payload.password !== "string") {
     return NextResponse.json({ error: "登录密码不能为空" }, { status: 400 });
   }
+  if (!smsDisabled && (!payload.code || typeof payload.code !== "string")) {
+    return NextResponse.json({ error: "验证码不能为空" }, { status: 400 });
+  }
 
   try {
-    const { token, user } = await registerByCodeAndPassword(payload.phone, payload.code, payload.password);
+    const { token, user } = smsDisabled
+      ? await registerByPassword(payload.phone, payload.password)
+      : await registerByCodeAndPassword(payload.phone, payload.code!, payload.password);
     const response = NextResponse.json({ authenticated: true, user });
     response.cookies.set({
       name: "yishu_session",
