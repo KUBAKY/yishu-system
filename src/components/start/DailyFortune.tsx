@@ -89,7 +89,7 @@ export default function DailyFortune({ userName, userPhone, authenticated, onSta
           </h1>
         </div>
       </CardHeader>
-      <Button variant="outline" onClick={onStartDeduction} className="absolute top-6 right-6">
+      <Button variant="outline" onClick={onStartDeduction} className="absolute top-6 right-6 z-20 cursor-pointer">
         发起新推演
       </Button>
       <CardContent className="space-y-6">

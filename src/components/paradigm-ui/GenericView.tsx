@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { InferenceOverlay } from "./InferenceOverlay";
 
 type ImageAttachment = {
   name: string;
@@ -141,6 +142,7 @@ export function GenericView({
   const handleStart = async () => {
     if (!canSubmit) return;
     setLoading(true);
+    setResult("");
     setError("");
     try {
       const parsed = new Date(currentTime);
@@ -148,7 +150,7 @@ export function GenericView({
         throw new Error("起局时间格式不正确");
       }
       const analysisMode = paradigmId === "zodiac" ? "forecast" : "event";
-      const response = await fetch("/api/inference", {
+      const response = await fetch("/api/inference/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -180,11 +182,60 @@ export function GenericView({
           })),
         }),
       });
-      const data = (await response.json()) as { result?: string; error?: string };
-      if (!response.ok || !data.result) {
-        throw new Error(data.error ?? "推演失败");
+      
+      if (!response.ok || !response.body) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "推演失败");
       }
-      setResult(data.result);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          if (buffer) {
+            const lines = buffer.split("\n").filter(line => line.trim() !== "");
+            for (const line of lines) {
+              if (line === "data: [DONE]") continue;
+              if (line.startsWith("data: ")) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  if (data.error) throw new Error(data.error);
+                  if (data.type === "status") {
+                    setResult(prev => prev + `\n➤ ${data.content}\n`);
+                  } else if (data.content) {
+                    setResult(prev => prev + data.content);
+                  }
+                } catch {}
+              }
+            }
+          }
+          break;
+        }
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine || trimmedLine === "data: [DONE]") continue;
+          if (trimmedLine.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(trimmedLine.slice(6));
+              if (data.error) throw new Error(data.error);
+              if (data.type === "status") {
+                setResult(prev => prev + `\n➤ ${data.content}\n`);
+              } else if (data.content) {
+                setResult(prev => prev + data.content);
+              }
+            } catch {}
+          }
+        }
+      }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "推演失败");
     } finally {
@@ -192,8 +243,11 @@ export function GenericView({
     }
   };
 
+  const showOverlay = loading && !result;
+
   return (
     <div className="space-y-8 text-center max-w-3xl mx-auto">
+      <InferenceOverlay isVisible={showOverlay} paradigmId={paradigmId} />
       <div className="space-y-2">
         <h2 className="text-2xl font-song text-gold-light">{title}</h2>
         <p className="text-xuanpaper/60">{desc}</p>

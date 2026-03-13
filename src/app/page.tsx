@@ -130,16 +130,17 @@ export default function Home() {
         {/* 标题区 */}
         <section className="text-center space-y-4">
           <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-seal text-gold-light tracking-widest"
+            initial={{ opacity: 0, filter: "blur(12px)", y: 20 }}
+            animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="text-4xl md:text-5xl font-seal text-gold-light tracking-widest drop-shadow-md"
           >
             易 枢
           </motion.h1>
           <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            initial={{ opacity: 0, filter: "blur(8px)" }}
+            animate={{ opacity: 1, filter: "blur(0px)" }}
+            transition={{ delay: 0.4, duration: 1 }}
             className="text-sm font-kai text-xuanpaper/60 tracking-[0.2em] uppercase"
           >
             YiShu Intelligent Deduction
@@ -147,19 +148,19 @@ export default function Home() {
           <motion.div 
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
+            transition={{ delay: 0.7, duration: 0.8 }}
             className="w-16 h-px bg-gold-line mx-auto mt-6"
           />
         </section>
 
         {/* 核心功能入口 */}
-        <section className="grid gap-6">
+        <section className="grid gap-8">
           {PARADIGMS.map((item, idx) => (
             <motion.div
               key={item.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + idx * 0.1 }}
+              initial={{ opacity: 0, filter: "blur(10px)", y: 20 }}
+              animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+              transition={{ delay: 0.6 + idx * 0.15, duration: 0.8, ease: "easeOut" }}
             >
               <Card
                 className="group cursor-pointer hover:border-gold-light/60 active:scale-[0.98]"
@@ -181,7 +182,12 @@ export default function Home() {
         </section>
 
         {/* 底部功能区 */}
-        <section className="mt-8 flex flex-col gap-4">
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.2, duration: 0.8 }}
+          className="mt-12 flex flex-col gap-6"
+        >
           <Button
             variant="primary"
             size="lg"
@@ -204,7 +210,7 @@ export default function Home() {
               账号中心
             </Button>
           ) : null}
-        </section>
+        </motion.section>
       </main>
 
       {/* 极简底部导航/声明 */}

@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Noto_Serif_SC, Ma_Shan_Zheng } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const notoSerifSC = Noto_Serif_SC({
+  weight: ["400", "700"],
+  preload: false,
+  display: "swap",
+  variable: "--font-noto-serif-sc",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const maShanZheng = Ma_Shan_Zheng({
+  weight: ["400"],
+  preload: false,
+  display: "swap",
+  variable: "--font-ma-shan-zheng",
 });
 
 export const metadata: Metadata = {
@@ -32,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${notoSerifSC.variable} ${maShanZheng.variable} antialiased`}
       >
         <ErrorBoundary>
           <ToastProvider>

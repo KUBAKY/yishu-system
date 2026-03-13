@@ -13,9 +13,9 @@
 
   /* 易枢字体 */
   --font-song:
-    "FZQKBYSJW", "Source Han Serif SC", "Noto Serif SC", "STSong", "SimSun",
+    var(--font-noto-serif-sc), "FZQKBYSJW", "Source Han Serif SC", "Noto Serif SC", "STSong", "SimSun",
     serif;
-  --font-kai: "LXGW WenKai", "FZFangSong", "STFangsong", "KaiTi", serif;
+  --font-kai: var(--font-ma-shan-zheng), "LXGW WenKai", "FZFangSong", "STFangsong", "KaiTi", serif;
   --font-seal: "方正小篆体", "STZhongsong", serif;
 
   --color-background: var(--background);

@@ -4,12 +4,11 @@ import { cookies } from "next/headers";
 import { retrieveClassicalCitations } from "@/lib/classical-references";
 import { resolveSession } from "@/lib/auth-store";
 import { appendCase } from "@/lib/cases-store";
-import { getBaziData, getQimenBasicInfo, getLiuyaoData } from "@/lib/paradigm-engine";
 
 import { InferencePayload } from "@/lib/inference/types";
-import { getParadigmSpec, buildPrompt, buildFoundationModules, buildLunarContext } from "@/lib/inference/prompt-builder";
-import { validateMode, validateProfile, validateForecastWindow, resolveAngles, validateAttachments, validateEventContext } from "@/lib/inference/validator";
-import { callOpenRouter, normalizeResponseContent, hasInstitutionalStructure } from "@/lib/inference/llm-client";
+import { getParadigmSpec, buildFoundationModules, buildLunarContext } from "@/lib/inference/prompt-builder";
+import { validateMode, resolveAngles, validateAttachments, validateEventContext } from "@/lib/inference/validator";
+import { runInferencePipeline, InferencePipelineContext } from "@/lib/inference/pipeline";
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") || "unknown";
@@ -34,7 +33,6 @@ export async function POST(request: NextRequest) {
   const paradigm = (payload.paradigm ?? "").trim().toLowerCase();
   const question = (payload.question ?? "").trim();
   const currentTime = (payload.currentTime ?? new Date().toISOString()).trim();
-  const location = (payload.location ?? "").trim();
   const analysisMode = validateMode(payload.analysisMode);
 
   const spec = getParadigmSpec(paradigm);
@@ -42,17 +40,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "术数范式不支持" }, { status: 400 });
   }
 
-  let profile: ReturnType<typeof validateProfile>;
   let eventContext = { background: "", urgency: "", horizon: "", mood: "" };
-  let forecastWindow: ReturnType<typeof validateForecastWindow>;
   let angles: ReturnType<typeof resolveAngles>;
   let attachments: ReturnType<typeof validateAttachments> = [];
   const normalizedQuestion =
     question || (analysisMode === "natal" ? "请给出我的整体命盘画像与长期指引" : "请给出阶段命盘推进建议");
   
   try {
-    profile = validateProfile(payload.profile);
-    forecastWindow = validateForecastWindow(payload.forecastWindow, analysisMode);
     angles = resolveAngles(paradigm, payload.angles);
     attachments = validateAttachments(payload.attachments);
     if (analysisMode === "event") {
@@ -66,52 +60,7 @@ export async function POST(request: NextRequest) {
   }
 
   const lunarContext = buildLunarContext(currentTime);
-  const parsedTime = new Date(currentTime);
-  let engineContext = "";
-  const engineData: Record<string, unknown> = {};
-
-  if (!Number.isNaN(parsedTime.getTime())) {
-    if (paradigm === "bazi" || paradigm === "composite" || (angles && angles.includes("八字"))) {
-      try {
-        const data = getBaziData(parsedTime);
-        engineContext += `\n[八字排盘]\n四柱：${data.ganzhi.year} ${data.ganzhi.month} ${data.ganzhi.day} ${data.ganzhi.time}\n五行：${data.wuxing.year} ${data.wuxing.month} ${data.wuxing.day} ${data.wuxing.time}\n日主：${data.dayMaster} (${data.naiveStrength})\n节气：${data.seasons.jieqi}\n`;
-        engineData.bazi = data;
-      } catch (e) {
-        console.error("Bazi engine error", e);
-      }
-    }
-    if (paradigm === "qimen" || (angles && angles.includes("奇门"))) {
-      try {
-        const data = getQimenBasicInfo(parsedTime);
-        engineContext += `\n[奇门排盘]\n节气：${data.jieqi}\n四柱：${data.ganzhi}\n`;
-        engineData.qimen = data;
-      } catch (e) {
-        console.error("Qimen engine error", e);
-      }
-    }
-    if (paradigm === "liuyao" || (angles && angles.includes("六爻"))) {
-      try {
-        const background = eventContext.background || "";
-        const match = background.match(/六爻卦象（初至上）：(.*?)；/);
-        if (match && match[1]) {
-          const yao = match[1].split("、");
-          const data = getLiuyaoData(parsedTime, yao);
-          engineContext += `\n[六爻排盘]\n本卦：${data.ben.name} (世${data.ben.shi || "?"}/应${data.ben.ying || "?"})\n`;
-          if (data.bian) {
-            engineContext += `变卦：${data.bian.name}\n`;
-          }
-          engineContext += `动爻：${data.movingLines.length > 0 ? data.movingLines.join(",") : "静卦"}\n`;
-          engineContext += `日期：${data.date.ganzhi} (空亡:${data.date.xunkong})\n`;
-          engineData.liuyao = data;
-        }
-      } catch (e) {
-        console.error("Liuyao engine error", e);
-      }
-    }
-  }
-
   const foundationModules = buildFoundationModules(paradigm, angles);
-  const model = process.env.OPENROUTER_MODEL ?? "openrouter/auto";
 
   const promptCitations = await retrieveClassicalCitations({
     paradigm: paradigm === "composite" ? "bazi" : paradigm,
@@ -119,82 +68,55 @@ export async function POST(request: NextRequest) {
     limit: 2,
   });
 
-  const prompt = buildPrompt({
-    paradigm,
-    analysisMode,
-    forecastWindow,
-    angles,
-    question: normalizedQuestion,
+  const citationsForContext = promptCitations.map((c) => ({
+    title: c.title,
+    chapter: c.chapter,
+    quote: c.quote,
+    source: "classical-references",
+  }));
+
+  const contextData: InferencePipelineContext = {
+    payload,
+    parsedTime: new Date(currentTime),
     currentTime,
-    location,
-    profile,
-    eventContext: {
-        background: eventContext?.background ?? "",
-        urgency: eventContext?.urgency ?? "",
-        horizon: eventContext?.horizon ?? "",
-        mood: eventContext?.mood ?? ""
-    },
-    lunarContext,
+    location: payload.location || "",
+    normalizedQuestion,
+    analysisMode,
+    paradigm,
+    angles,
+    eventContext,
+    attachments,
     spec,
     foundationModules,
-    imageContext: attachments.map((item) => ({
-      name: item.name,
-      note: item.note,
-      category: item.category,
-    })),
-    engineContext,
-    citations: promptCitations,
-  });
+    citations: citationsForContext,
+    lunarContext: lunarContext ? `${lunarContext.solarDate} ${lunarContext.lunarDate} ${lunarContext.ganzhi}` : null
+  };
+
+  let finalResult = "";
+  let finalModel = "openrouter/auto";
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
-  }, 45000);
+  }, 90000); // give 90s for non-stream since pipeline takes longer
 
-  const userMessageContent: Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }> = [
-    { type: "text", text: prompt },
-    ...attachments.map((item) => ({ type: "image_url" as const, image_url: { url: item.dataUrl } })),
-  ];
+  try {
+    const res = await runInferencePipeline(contextData, controller.signal, false);
+    finalResult = res.finalResult || "";
+    finalModel = res.finalModel || finalModel;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.error("[inference/route] Error:", error);
+    return NextResponse.json({ error: "推演管道执行异常" }, { status: 500 });
+  }
 
-  const { data, fallbackError, response } = await callOpenRouter(key, model, userMessageContent, controller.signal);
   clearTimeout(timeoutId);
 
-  if (!response || !response.ok) {
-    return NextResponse.json(
-      { error: data?.error?.message ?? (fallbackError || "模型调用失败") },
-      { status: response ? (response.status >= 400 && response.status < 500 ? 400 : 502) : 502 },
-    );
+  if (!finalResult) {
+    return NextResponse.json({ error: "推演引擎响应为空" }, { status: 502 });
   }
 
-  let rawContent = "";
-  if (data && data.choices && data.choices.length > 0) {
-    rawContent = normalizeResponseContent(data.choices[0].message?.content);
-  } else {
-    rawContent = "模型未返回有效内容";
-  }
-
-  let finalResult = rawContent;
-  let finalModel = data?.model ?? model;
-
-  if (!hasInstitutionalStructure(finalResult)) {
-    const backupModel = "anthropic/claude-3-haiku";
-    try {
-      const backupResponse = await callOpenRouter(key, backupModel, userMessageContent, controller.signal);
-      if (backupResponse.data?.choices && backupResponse.data.choices.length > 0) {
-        finalResult = normalizeResponseContent(backupResponse.data.choices[0].message?.content);
-        finalModel = backupResponse.data.model ?? backupModel;
-      }
-    } catch {
-      // 降级失败则仍返回原文
-    }
-  }
-
-  let mappedConfidence = 85;
-  if (!hasInstitutionalStructure(finalResult)) {
-    mappedConfidence = 60;
-  }
-
-  const citations = promptCitations.map((c) => ({
+  const outputCitations = promptCitations.map((c) => ({
     title: c.title,
     chapter: c.chapter,
     quote: c.quote,
@@ -203,24 +125,29 @@ export async function POST(request: NextRequest) {
 
   try {
     await appendCase({
-      title: `${modeLabel}: ${normalizedQuestion.slice(0, 20)}`,
-      user_id: user ? user.id : "guest",
-      mode: analysisMode,
+      id: crypto.randomUUID(),
+      userId: user ? user.id : "guest",
       paradigm,
-      confidence: mappedConfidence,
-      prompt: prompt,
+      paradigmLabel: spec.label,
+      question: normalizedQuestion,
+      location: payload.location || "",
+      currentTime,
       result: finalResult,
       model: finalModel,
       reference: spec.reference,
-      lunarContext: lunarContext ?? undefined,
+      lunarContext: lunarContext ? {
+        solarDate: lunarContext.solarDate,
+        lunarDate: lunarContext.lunarDate,
+        ganzhi: lunarContext.ganzhi
+      } : undefined,
       foundations: foundationModules,
-      engineData,
+      engineData: {},
       aiEnhancements: [
         "多范式交叉校验",
         "证据链机构化重排",
         "分阶段行动建议生成",
       ],
-      citations,
+      citations: outputCitations,
       createdAt: new Date().toISOString(),
     });
   } catch (error) {
@@ -233,14 +160,13 @@ export async function POST(request: NextRequest) {
       paradigm,
       paradigmLabel: spec.label,
       analysisMode,
-      forecastWindow: forecastWindow ?? undefined,
       angles,
       model: finalModel,
       reference: spec.reference,
-      citations,
+      citations: outputCitations,
       lunarContext: lunarContext ?? undefined,
       foundations: foundationModules,
-      engineData,
+      engineData: {},
       aiEnhancements: [
         "多范式交叉校验",
         "证据链机构化重排",

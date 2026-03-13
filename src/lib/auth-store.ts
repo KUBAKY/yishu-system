@@ -313,14 +313,21 @@ export async function removeSession(token: string) {
 }
 
 export async function resolveSession(token: string): Promise<AuthUser | null> {
-  if (!token) return null;
-
-  let session: { id: string; expires: Date; user: Record<string, any> } | null = null;
   try {
-    session = await prisma.session.findUnique({
+    if (!token) return null;
+
+    const session = await prisma.session.findUnique({
       where: { sessionToken: token },
       include: { user: true },
     });
+    if (!session) return null;
+
+    if (session.expires < new Date()) {
+      await prisma.session.delete({ where: { id: session.id } });
+      return null;
+    }
+
+    return toAuthUser(session.user);
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[auth] resolveSession failed:", error);
@@ -328,15 +335,6 @@ export async function resolveSession(token: string): Promise<AuthUser | null> {
     }
     throw error;
   }
-
-  if (!session) return null;
-
-  if (session.expires < new Date()) {
-    await prisma.session.delete({ where: { id: session.id } });
-    return null;
-  }
-
-  return toAuthUser(session.user);
 }
 
 export async function upsertUserProfile(userId: string, profileInput: UserProfile): Promise<AuthUser> {

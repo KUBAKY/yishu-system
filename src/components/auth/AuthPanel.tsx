@@ -136,6 +136,19 @@ export function AuthPanel({
     setAuthMessage("");
   }
 
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (authMode === "login") {
+      if (canLogin) {
+        void onLogin();
+      }
+      return;
+    }
+    if (canRegister) {
+      void onRegister();
+    }
+  }
+
   if (authLoading) {
     return <p className="text-sm text-xuanpaper/70">状态加载中...</p>;
   }
@@ -143,7 +156,7 @@ export function AuthPanel({
   return (
     <div className="space-y-3">
       {!auth.authenticated ? (
-        <>
+        <form className="space-y-3" onSubmit={handleSubmit}>
           <p className="text-sm text-xuanpaper/70">{guestMessage}</p>
           <div className="flex gap-2">
             <Button
@@ -169,6 +182,7 @@ export function AuthPanel({
               value={phone}
               onChange={(event) => setPhone(event.target.value.trim())}
               placeholder="输入手机号"
+              autoComplete="tel"
               className="rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
             />
             {authMode === "login" ? (
@@ -177,6 +191,7 @@ export function AuthPanel({
                 value={loginPassword}
                 onChange={(event) => setLoginPassword(event.target.value)}
                 placeholder="登录密码"
+                autoComplete="current-password"
                 className="w-full rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
               />
             ) : smsDisabled ? null : (
@@ -188,7 +203,7 @@ export function AuthPanel({
                   placeholder="短信验证码"
                   className="w-full rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
                 />
-                <Button variant="outline" onClick={onSendCode} disabled={!canSendCode}>
+                <Button type="button" variant="outline" onClick={onSendCode} disabled={!canSendCode}>
                   {sendingCode ? "发送中" : "发码"}
                 </Button>
               </div>
@@ -202,6 +217,7 @@ export function AuthPanel({
                   value={registerPassword}
                   onChange={(event) => setRegisterPassword(event.target.value)}
                   placeholder="设置登录密码（6-64位）"
+                  autoComplete="new-password"
                   className="rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
                 />
                 <input
@@ -209,25 +225,26 @@ export function AuthPanel({
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   placeholder="确认登录密码"
+                  autoComplete="new-password"
                   className="rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
                 />
               </div>
               <p className="text-xs text-xuanpaper/60">
                 {smsDisabled ? "开发阶段免短信验证码。" : "短信验证码用于校验手机号。"}
               </p>
-              <Button variant="primary" onClick={onRegister} disabled={!canRegister}>
+              <Button type="submit" variant="primary" disabled={!canRegister}>
                 {registering ? "注册中..." : "注册并登录"}
               </Button>
             </>
           ) : (
             <>
-              <Button variant="primary" onClick={onLogin} disabled={!canLogin}>
+              <Button type="submit" variant="primary" disabled={!canLogin}>
                 {loggingIn ? "登录中..." : "手机号密码登录"}
               </Button>
               {loginBlockedReason ? <p className="text-xs text-xuanpaper/60">{loginBlockedReason}</p> : null}
             </>
           )}
-        </>
+        </form>
       ) : (
         <>
           <p className="text-sm text-xuanpaper/70">手机号：{auth.user.phone}</p>

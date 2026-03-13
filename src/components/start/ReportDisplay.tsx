@@ -62,7 +62,6 @@ export function ReportDisplay({
       {result.meta.forecastWindow ? (
         <p className="text-sm text-xuanpaper/70">窗口：{result.meta.forecastWindow === "3m" ? "最近三个月" : "最近一年"}</p>
       ) : null}
-      <p className="text-sm text-xuanpaper/70">模型：{result.meta.model}</p>
       <p className="text-sm text-xuanpaper/70">参考实现：{result.meta.reference}</p>
       <p className="text-sm text-xuanpaper/70">
         保存状态：

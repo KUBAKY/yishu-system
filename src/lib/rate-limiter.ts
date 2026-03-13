@@ -3,8 +3,22 @@ export interface RateLimitConfig {
   maxRequests: number;  // 窗口内最大请求数
 }
 
+// TODO: Replace with @upstash/redis or similar for production Vercel Edge/Serverless environments.
+// In-memory rate limiting (even with globalThis) only works for a single instance and resets across stateless serverless invocations.
+
+const globalForRateLimit = globalThis as unknown as {
+  rateLimitStore: Map<string, { count: number; resetTime: number }> | undefined;
+};
+
 export class RateLimiter {
-  private store: Map<string, { count: number; resetTime: number }> = new Map();
+  private store: Map<string, { count: number; resetTime: number }>;
+
+  constructor() {
+    if (!globalForRateLimit.rateLimitStore) {
+      globalForRateLimit.rateLimitStore = new Map();
+    }
+    this.store = globalForRateLimit.rateLimitStore;
+  }
 
   check(identifier: string, config: RateLimitConfig): { allowed: boolean; retryAfter: number } {
     const now = Date.now();

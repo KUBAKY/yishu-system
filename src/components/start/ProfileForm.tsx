@@ -132,7 +132,7 @@ export function ProfileForm({
         <textarea
           value={experienceNarrative}
           onChange={(event) => setExperienceNarrative(event.target.value)}
-          className="space-y-6 rounded-2xl bg-xuangray/60 p-6 border border-white/5 shadow-inner"
+          className="w-full min-h-28 rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
           placeholder={EXPERIENCE_TEMPLATE}
         />
       </label>

@@ -244,7 +244,6 @@ export default function CasesPage() {
                   <p className="text-sm text-xuanpaper/70">范式：{selected.paradigmLabel}</p>
                   <p className="text-sm text-xuanpaper/70">时间：{formatTime(selected.currentTime)}</p>
                   <p className="text-sm text-xuanpaper/70">地点：{selected.location || "未填写"}</p>
-                  <p className="text-sm text-xuanpaper/70">模型：{selected.model}</p>
                   <p className="text-sm text-xuanpaper/70">参考实现：{selected.reference}</p>
                   {selected.lunarContext ? (
                     <p className="text-sm text-xuanpaper/70">

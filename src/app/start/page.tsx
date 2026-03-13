@@ -8,15 +8,19 @@ import { Button } from "@/components/ui/Button";
 import { AuthMeResponse, UserProfile } from "@/types/auth";
 import { InferenceResponse, ResultSections, AnalysisMode, ForecastWindow, Step, ReportView } from "@/types/inference";
 import { SaveProfileResponse } from "@/types/api-responses";
+import { YishuCase } from "@/types/case";
 import { AuthPanel } from "@/components/auth";
-import { DailyFortune, ProfileForm, StepIndicator, ExpertTeam, ReportDisplay, DeductionForm, PARADIGMS, ANGLE_OPTIONS, QUICK_LOCATIONS } from "@/components/start";
+import { DailyFortune, ProfileForm, StepIndicator, ExpertTeam, ReportDisplay, DeductionForm, PARADIGMS, ANGLE_OPTIONS } from "@/components/start";
 import { toInputDateTime } from "@/lib/utils";
 
 const DRAFT_KEY = "yishu:start:draft:v1";
 const LAST_REPORT_KEY = "yishu:start:last-report:v1";
-const EXPERIENCE_TEMPLATE = `建议包含：\n1. 成长背景与关键转折\n2. 学习/职业的重要阶段\n3. 创业或工作中的高低点\n4. 影响你决策风格的事件`;
-const STATUS_TEMPLATE = `建议包含：\n1. 收入、负债与现金流压力\n2. 家庭关系与主要责任\n3. 当前最焦虑的现实问题`;
-const VISION_TEMPLATE = `建议包含：\n1. 1年内最想达成的结果\n2. 3年内的职业与财富目标\n3. 你愿意持续投入的方向`;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _EXPERIENCE_TEMPLATE = `建议包含：\n1. 成长背景与关键转折\n2. 学习/职业的重要阶段\n3. 创业或工作中的高低点\n4. 影响你决策风格的事件`;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _STATUS_TEMPLATE = `建议包含：\n1. 收入、负债与现金流压力\n2. 家庭关系与主要责任\n3. 当前最焦虑的现实问题`;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _VISION_TEMPLATE = `建议包含：\n1. 1年内最想达成的结果\n2. 3年内的职业与财富目标\n3. 你愿意持续投入的方向`;
 
 function parseResultSections(content: string): ResultSections {
   const normalized = content.replace(/\r\n/g, "\n");
@@ -103,7 +107,7 @@ function StartPageContent() {
   
   // Specialized Inputs
   const [partnerName, setPartnerName] = useState<string>("");
-  const [partnerGender, setPartnerGender] = useState<"男" | "女">("女");
+  const [partnerGender, setPartnerGender] = useState<string>("女");
   const [partnerBirthDate, setPartnerBirthDate] = useState<string>("");
   const [partnerBirthTime, setPartnerBirthTime] = useState<string>("");
   
@@ -518,7 +522,7 @@ function StartPageContent() {
                       return { ...prev, result: streamResult };
                   });
                 }
-              } catch (e) {
+              } catch {
                 // Ignore parse errors for partial chunks
               }
             }
@@ -564,9 +568,6 @@ function StartPageContent() {
         model: data.meta.model,
         reference: data.meta.reference,
         citations: data.meta.citations,
-        lunarContext: data.meta.lunarContext,
-        foundations: data.meta.foundations ?? [],
-        aiEnhancements: data.meta.aiEnhancements ?? [],
       };
       const saveResponse = await fetch("/api/cases", {
         method: "POST",
@@ -588,6 +589,7 @@ function StartPageContent() {
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canSubmit) return;
     void startDeduction();
   }
 
@@ -824,31 +826,6 @@ function StartPageContent() {
           </>
         )}
 
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-song text-gold-light">账号状态</h2>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <AuthPanel
-              auth={auth}
-              authLoading={authLoading}
-              onAuthChange={setAuth}
-              guestMessage="当前为游客态：可推演，登录后可保存历史记录并启用试用权益。"
-              successMessage="登录成功，已自动登录"
-              authenticatedActions={
-                <Button variant="primary" size="sm" onClick={() => router.push("/account")}>
-                  个人中心
-                </Button>
-              }
-            />
-            {auth.authenticated && auth.user.trialEndsAt ? (
-              <p className="text-sm text-xuanpaper/70 mt-2">
-                试用截止：{new Date(auth.user.trialEndsAt).toLocaleDateString("zh-CN")}
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
-
         {error ? (
           <Card>
             <CardContent className="text-sm text-red-300 pt-5">{error}</CardContent>
@@ -888,6 +865,31 @@ function StartPageContent() {
             </CardContent>
           </Card>
         ) : null}
+
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-song text-gold-light">账号状态</h2>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <AuthPanel
+              auth={auth}
+              authLoading={authLoading}
+              onAuthChange={setAuth}
+              guestMessage="当前为游客态：可推演，登录后可保存历史记录并启用试用权益。"
+              successMessage="登录成功，已自动登录"
+              authenticatedActions={
+                <Button variant="primary" size="sm" onClick={() => router.push("/account")}>
+                  个人中心
+                </Button>
+              }
+            />
+            {auth.authenticated && auth.user.trialEndsAt ? (
+              <p className="text-sm text-xuanpaper/70 mt-2">
+                试用截止：{new Date(auth.user.trialEndsAt).toLocaleDateString("zh-CN")}
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
 
         <div className="flex gap-3">
           <Link href="/cases">

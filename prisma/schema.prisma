@@ -54,6 +54,8 @@ model Case {
   updatedAt        DateTime @updatedAt
   
   user             User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
 }
 
 model Knowledge {

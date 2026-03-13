@@ -1,4 +1,4 @@
-import { Solar, Lunar, EightChar, LunarUtil } from "lunar-javascript";
+import { Solar } from "lunar-javascript";
 
 export type BaziData = {
   ganzhi: {
@@ -26,9 +26,6 @@ export type BaziData = {
   };
   naiveStrength: string;
 };
-
-
-import { Lunar, EightChar, LunarUtil } from "lunar-javascript";
 
 export type QimenBasicInfo = {
   jieqi: string;
@@ -119,7 +116,7 @@ function getGuaName(lines: number[]): string {
 export function getBaziData(date: Date): BaziData {
   const solar = Solar.fromDate(date);
   const lunar = solar.getLunar() as any;
-  const eightChar = lunar.getEightChar() as EightChar;
+  const eightChar = lunar.getEightChar() as any;
 
   const yearGan = eightChar.getYearGan();
   const yearZhi = eightChar.getYearZhi();
@@ -321,3 +318,114 @@ export function getLiuyaoData(date: Date, yao: string[]): LiuyaoData {
   };
 }
 
+export type MeihuaData = {
+  ben: string;
+  hu: string;
+  bian: string;
+  movingLine: number;
+  ti: { name: string, wuxing: string };
+  yong: { name: string, wuxing: string };
+};
+
+const BAGUA_NAME: Record<number, string> = { 1: "乾", 2: "兑", 3: "离", 4: "震", 5: "巽", 6: "坎", 7: "艮", 8: "坤" };
+const BAGUA_WUXING: Record<number, string> = { 1: "金", 2: "金", 3: "火", 4: "木", 5: "木", 6: "水", 7: "土", 8: "土" };
+
+export function getMeihuaData(date: Date): MeihuaData {
+  const solar = Solar.fromDate(date);
+  const lunar = solar.getLunar() as any;
+  
+  const yearNum = lunar.getYearZhiIndex() + 1;
+  const monthNum = lunar.getMonth();
+  const dayNum = Math.abs(lunar.getDay());
+  const hourNum = lunar.getTimeZhiIndex() + 1;
+  
+  let upperNum = (yearNum + monthNum + dayNum) % 8;
+  if (upperNum === 0) upperNum = 8;
+  
+  let lowerNum = (yearNum + monthNum + dayNum + hourNum) % 8;
+  if (lowerNum === 0) lowerNum = 8;
+  
+  let movingLine = (yearNum + monthNum + dayNum + hourNum) % 6;
+  if (movingLine === 0) movingLine = 6;
+  
+  const BAGUA_DECIMAL: Record<number, number> = { 1: 7, 2: 3, 3: 5, 4: 1, 5: 6, 6: 2, 7: 4, 8: 0 };
+  const getLines = (num: number) => {
+    const dec = BAGUA_DECIMAL[num] || 0;
+    return [dec & 1, (dec >> 1) & 1, (dec >> 2) & 1];
+  };
+  
+  const lowerLines = getLines(lowerNum);
+  const upperLines = getLines(upperNum);
+  const benLines = [...lowerLines, ...upperLines];
+  const benName = getGuaName(benLines);
+  
+  const huLines = [benLines[1], benLines[2], benLines[3], benLines[2], benLines[3], benLines[4]];
+  const huName = getGuaName(huLines);
+  
+  const bianLines = [...benLines];
+  bianLines[movingLine - 1] = bianLines[movingLine - 1] === 1 ? 0 : 1;
+  const bianName = getGuaName(bianLines);
+  
+  let tiNum = 0, yongNum = 0;
+  if (movingLine <= 3) {
+    tiNum = upperNum;
+    yongNum = lowerNum;
+  } else {
+    tiNum = lowerNum;
+    yongNum = upperNum;
+  }
+  
+  return {
+    ben: benName,
+    hu: huName,
+    bian: bianName,
+    movingLine,
+    ti: { name: BAGUA_NAME[tiNum], wuxing: BAGUA_WUXING[tiNum] },
+    yong: { name: BAGUA_NAME[yongNum], wuxing: BAGUA_WUXING[yongNum] }
+  };
+}
+
+export type ZodiacData = {
+  sunSign: string;
+  moonSign: string;
+  ascendant: string;
+};
+
+export function getZodiacData(date: Date): ZodiacData {
+  const solar = Solar.fromDate(date);
+  const month = solar.getMonth();
+  const day = solar.getDay();
+  
+  let sunSign = "Aries";
+  if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) sunSign = "白羊座";
+  else if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) sunSign = "金牛座";
+  else if ((month == 5 && day >= 21) || (month == 6 && day <= 21)) sunSign = "双子座";
+  else if ((month == 6 && day >= 22) || (month == 7 && day <= 22)) sunSign = "巨蟹座";
+  else if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) sunSign = "狮子座";
+  else if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) sunSign = "处女座";
+  else if ((month == 9 && day >= 23) || (month == 10 && day <= 23)) sunSign = "天秤座";
+  else if ((month == 10 && day >= 24) || (month == 11 && day <= 22)) sunSign = "天蝎座";
+  else if ((month == 11 && day >= 23) || (month == 12 && day <= 21)) sunSign = "射手座";
+  else if ((month == 12 && day >= 22) || (month == 1 && day <= 19)) sunSign = "摩羯座";
+  else if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) sunSign = "水瓶座";
+  else if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) sunSign = "双鱼座";
+  
+  const lunar = solar.getLunar() as any;
+  const lunarDay = lunar.getDay(); 
+  const signs = ["白羊座", "金牛座", "双子座", "巨蟹座", "狮子座", "处女座", "天秤座", "天蝎座", "射手座", "摩羯座", "水瓶座", "双鱼座"];
+  
+  const sunIndex = signs.indexOf(sunSign);
+  const advance = Math.floor(lunarDay / 2.5);
+  const moonSign = signs[(sunIndex + advance) % 12];
+  
+  const hour = date.getHours();
+  const hourShift = Math.floor(hour / 2) - 3;
+  const ascIndex = (sunIndex + hourShift + 12) % 12;
+  const ascendant = signs[ascIndex];
+  
+  return {
+    sunSign,
+    moonSign,
+    ascendant
+  };
+}

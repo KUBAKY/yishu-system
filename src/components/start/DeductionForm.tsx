@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction } from "react";
 import { Button } from "@/components/ui/Button";
 import { Step, AnalysisMode, ForecastWindow } from "@/types/inference";
-import { PARADIGMS, ANGLE_OPTIONS, QUICK_LOCATIONS } from "./constants";
+import { QUICK_LOCATIONS } from "./constants";
 import { toInputDateTime } from "@/lib/utils";
 
 export interface DeductionFormProps {
@@ -332,7 +332,7 @@ export function DeductionForm(props: DeductionFormProps) {
             下一步
           </Button>
         ) : (
-          <Button variant="primary" size="lg" className="flex-1" disabled={!props.canSubmit} onClick={() => props.startDeduction()}>
+          <Button type="submit" variant="primary" size="lg" className="flex-1" disabled={!props.canSubmit}>
             {props.loading ? "推演中..." : "开始推演"}
           </Button>
         )}

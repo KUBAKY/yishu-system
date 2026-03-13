@@ -33,7 +33,8 @@ export async function callOpenRouter(
   key: string,
   model: string,
   userMessageContent: Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }>,
-  signal: AbortSignal
+  signal: AbortSignal,
+  systemPrompt?: string
 ): Promise<{ data?: OpenRouterResponse; fallbackError?: string; response?: Response; text?: string }> {
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -49,8 +50,7 @@ export async function callOpenRouter(
         messages: [
           {
             role: "system",
-            content:
-              "你是易枢术数分析助手。你的职责是给出可解释的结构化判断，强调行动建议与风险边界。",
+            content: systemPrompt || "你是易枢术数分析助手。你的职责是给出可解释的结构化判断，强调行动建议与风险边界。",
           },
           { role: "user", content: userMessageContent },
         ],
