@@ -219,6 +219,22 @@ export default function Home() {
               账号中心
             </Button>
           ) : null}
+          <div className="flex gap-4">
+            <Button
+              variant="outline"
+              className="flex-1 font-song tracking-widest"
+              onClick={() => alert("此功能不可为凡人用，无量天尊")}
+            >
+              画符施咒
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 font-song tracking-widest text-[#B22222] border-[#B22222]/30 hover:bg-[#B22222]/5"
+              onClick={() => alert("此功能不可为凡人用，无量天尊")}
+            >
+              破·解·镇
+            </Button>
+          </div>
         </motion.section>
       </main>
 
