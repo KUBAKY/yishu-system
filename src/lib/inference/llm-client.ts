@@ -79,8 +79,10 @@ export async function callOpenRouter(
     return { data, fallbackError, response };
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      return { fallbackError: "模型请求超时" };
+      console.error("[llm-client] Request aborted (timeout or user cancellation)");
+      return { fallbackError: "模型请求超时，请重试" };
     }
-    return { fallbackError: "模型服务不可达或网络错误" };
+    console.error("[llm-client] Network/Fetch error:", error);
+    return { fallbackError: `模型服务不可达: ${error instanceof Error ? error.message : "网络错误"}` };
   }
 }

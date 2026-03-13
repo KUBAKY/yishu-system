@@ -111,9 +111,11 @@ export async function POST(request: NextRequest) {
   let finalModel = "openrouter/auto";
 
   const controller = new AbortController();
+  // In development, Next.js server actions can take longer, and LLM reasoning can be slow
+  // Increase timeout to 5 minutes to be safe
   const timeoutId = setTimeout(() => {
     controller.abort();
-  }, 90000); // give 90s for non-stream since pipeline takes longer
+  }, 300000); 
 
   try {
     const res = await runInferencePipeline(contextData, controller.signal, false);
