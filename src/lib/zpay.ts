@@ -2,8 +2,8 @@ import crypto from "crypto";
 import { headers } from "next/headers";
 
 const ZPAY_API_URL = "https://zpayz.cn/mapi.php";
-const ZPAY_PID = process.env.ZPAY_PID || "2025092411423631";
-const ZPAY_KEY = process.env.ZPAY_KEY || "QPFByBhWtaHclWp3gSrc3yNYxeg3GwT5";
+const ZPAY_PID = process.env.ZPAY_PID || "";
+const ZPAY_KEY = process.env.ZPAY_KEY || "";
 
 export interface ZPayCreateResponse {
   code: number;
