@@ -6,6 +6,27 @@
     "type": "git",
     "url": "https://github.com/KUBAKY/yishu-system.git"
   },
+  "description": "意数系统 (Yishu System) - 基于 AI 大模型驱动的现代化术数推演与决策辅助平台，支持奇门遁甲、六爻纳甲、专家会诊模式。A modern metaphysics inference and decision support system powered by LLMs, supporting Qi Men Dun Jia and Liu Yao.",
+  "keywords": [
+    "yishu",
+    "yishu-system",
+    "qimen-dun-jia",
+    "liuyao",
+    "bazi",
+    "meihua-yishu",
+    "fengshui",
+    "zodiac",
+    "tarot",
+    "palmistry",
+    "physiognomy",
+    "chinese-naming",
+    "ai-agent",
+    "expert-system",
+    "nextjs",
+    "metaphysics",
+    "divination",
+    "tradition-tech"
+  ],
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

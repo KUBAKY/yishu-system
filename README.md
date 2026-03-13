@@ -1,6 +1,6 @@
 # 意数系统 (Yishu System)
 
-> **基于 AI 驱动的现代化术数推演与决策辅助系统**
+> **基于 AI 大模型驱动的现代化术数推演与决策辅助系统 | A Modern AI-Powered Metaphysics Inference & Decision Support Platform**
 
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![Next.js](https://img.shields.io/badge/Next.js-15+-black)](https://nextjs.org/)
@@ -21,15 +21,19 @@
 
 ---
 
-## ✨ 核心特性
+## ✨ 核心特性 (Core Paradigms)
 
-- **专家团会诊模式**: 模拟多位术数专家（如“奇门推演官”、“六爻详考员”）协同分析，输出结构化报告。
-- **双模推演引擎**:
-  - **奇门遁甲 (Qi Men)**: 自动化起局逻辑，支持值符、值使及三奇六仪的动态推算。
-  - **六爻纳甲 (Liu Yao)**: 严谨的纳甲排盘与五行生克实证。
-- **五行精选取名**: 结合生辰八字与五行补益的高级取名建议模块。
-- **现代化 UI/UX**: 采用暗色调、玻璃拟态设计，提供极具专业感和神秘感的交互体验。
-- **生产级架构**: 基于 Next.js 15+、Prisma 和 Docker 容器化方案，具备部署透明性。
+本项目深度集成了十项专业的术数推演与量化分析模块：
+
+- **八字命理 (Bazi)**: 子平真诠，洞察先天格局与岁运起伏。
+- **六爻纳甲 (Liu Yao)**: 卜问人事忧疑与吉凶应期。
+- **梅花易数 (Meihua)**: 观物起卦，捕捉天地外应。
+- **奇门遁甲 (Qi Men)**: 时空博弈下的决胜运筹。
+- **堪舆风水 (Feng Shui)**: 调和场域与生命的能量契合。
+- **星占塔罗 (Zodiac & Tarot)**: 群星轨迹与牌阵映心，揭示成长路径。
+- **手相面相 (Palmistry & Physio)**: 识别行为节律与阶段风险信号。
+- **五行取名 (Naming)**: 结合本命八字与数理逻辑的补益建议。
+- **专家团会诊模式**: 模拟多领域专家协同输出高可用的决策报告。
 
 ---
 

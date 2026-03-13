@@ -65,7 +65,24 @@ prisma/*.db-journal
 
 ---
 
-## 5. 发布建议
+## 5. GitHub SEO 优化 (提升曝光度)
+
+为了让全球或中文社区的开发者更容易搜索到您的项目，建议在发布时配置以下内容：
+
+### A. 仓库主题标签 (Topics)
+在 GitHub 仓库页面的右侧 `About` 栏位，建议添加以下标签（全功能矩阵）：
+`yishu`, `qimen`, `liuyao`, `bazi`, `meihua`, `fengshui`, `zodiac`, `tarot`, `palmistry`, `physiognomy`, `naming`, `ai-agent`, `metaphysics`
+
+### B. 仓库描述 (Bilingual Description)
+确保 GitHub 的 `Description` 涵盖核心模块。推荐描述：
+> 🔮 意数系统 (Yishu System) - AI 专家推演平台：支持八字命理、奇门遁甲、六爻纳甲、梅花易数、堪舆风水、星占塔罗、手相面相及五行取名。A comprehensive AI metaphysics platform.
+
+### C. Keywords (package.json)
+我已在 `package.json` 中扩展了更全的关键词列表。
+
+---
+
+## 6. 发布建议
 
 1. **GitHub Star**: 在推演结果中引导用户通过“Star”来支持这个开源术数项目。
 2. **免责声明**: 在 README 中加入醒目的“免责声明”，说明本系统仅供学术研究和娱乐，不对任何推演结果产生的经济决策负责。
