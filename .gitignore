@@ -42,7 +42,7 @@ next-env.d.ts
 
 # Data & Sensitive Information
 /术数书籍数据/
-/李亚威的命盘/
+/作者的命盘测试数据/
 /zpay支付集成文件/
 
 # SQLite Databases
