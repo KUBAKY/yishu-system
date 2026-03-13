@@ -56,10 +56,15 @@ export type LiuyaoData = {
     xunkong: string; // 旬空
   };
   movingLines: number[]; // 动爻位置 1-6
+  kinship?: {
+    isGuiHun: boolean;
+    isYouHun: boolean;
+  };
 };
 
 // 简易六爻排盘（硬编码部分逻辑，完整排盘极其复杂，建议后续引入专业库）
 // 这里仅实现 64 卦名映射和基础世应
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const GUA_64 = [
   "乾为天", "坤为地", "水雷屯", "山水蒙", "水天需", "天水讼", "地水师", "水地比",
   "风天小畜", "天泽履", "地天泰", "天地否", "天火同人", "火天大有", "地山谦", "雷地豫",
@@ -202,16 +207,21 @@ export function getQimenBasicInfo(date: Date): QimenBasicInfo {
   // 3. 正确计算局数
   const ju = getQimenJu(jieqiName, yuan, dun);
 
+  // 4. 模拟值符值使 (简化计算：根据局数偏移)
+  const stars = ["天蓬星", "天芮星", "天冲星", "天辅星", "天禽星", "天心星", "天柱星", "天任星", "天英星"];
+  const doors = ["休门", "死门", "伤门", "杜门", "中门", "开门", "惊门", "生门", "景门"];
+  const offset = (ju + dayDiff) % 9;
+
   return {
     jieqi: jieqiName,
     yuan, 
     dun,
     ju,
     ganzhi: Array.isArray(bazi) ? bazi.join(" ") : String(bazi),
-    zhifu: "天蓬星", // 此部分继续由于无需精细实现而在提示词补充
-    zhishi: "休门",
-    dutyStar: "天蓬星",
-    dutyDoor: "休门"
+    zhifu: stars[offset],
+    zhishi: doors[offset],
+    dutyStar: stars[offset],
+    dutyDoor: doors[offset]
   };
 }
 
@@ -315,6 +325,10 @@ export function getLiuyaoData(date: Date, yao: string[]): LiuyaoData {
       xunkong: lunar.getDayXunKong(),
     },
     movingLines,
+    kinship: {
+      isGuiHun: benName.includes("归魂"),
+      isYouHun: benName.includes("游魂"),
+    }
   };
 }
 

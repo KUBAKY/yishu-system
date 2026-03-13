@@ -45,6 +45,15 @@ next-env.d.ts
 /李亚威的命盘/
 /zpay支付集成文件/
 
+# SQLite Databases
+prisma/*.db
+prisma/*.db-journal
+prisma/*.db-shm
+prisma/*.db-wal
+
+# Docker Persistence
+/data/
+
 # AI System Folders
 /agents/
 /skills/

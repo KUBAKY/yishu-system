@@ -1,0 +1,17 @@
+services:
+  yishu-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: yishu-app
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    volumes:
+      - ./prisma/dev.db:/app/prisma/dev.db
+      - ./public/uploads:/app/public/uploads # 假如未来有图片上传功能
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:./dev.db

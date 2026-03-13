@@ -1,6 +1,11 @@
 {
-  "name": "yishu-temp",
-  "version": "0.1.0",
+  "name": "yishu-system",
+  "version": "1.0.0",
+  "author": "KUBAKY (https://github.com/KUBAKY)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KUBAKY/yishu-system.git"
+  },
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
