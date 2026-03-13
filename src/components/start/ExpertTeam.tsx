@@ -8,7 +8,7 @@ export interface ExpertTeamProps {
 export function ExpertTeam({ paradigm, angles }: ExpertTeamProps) {
   const activeExperts = useMemo(() => {
     const list = [];
-    if (["bazi", "ziwei", "composite"].includes(paradigm) || angles.includes("八字")) {
+    if (["bazi", "ziwei", "composite", "naming"].includes(paradigm) || angles.includes("八字")) {
       list.push({ id: "e1", name: "天机老叟", specialty: "命理构架与大运断语", icon: "🧙‍♂️" });
     }
     if (["liuyao", "meihua", "composite"].includes(paradigm)) {

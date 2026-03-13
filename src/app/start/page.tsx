@@ -10,8 +10,10 @@ import { InferenceResponse, ResultSections, AnalysisMode, ForecastWindow, Step, 
 import { SaveProfileResponse } from "@/types/api-responses";
 import { YishuCase } from "@/types/case";
 import { AuthPanel } from "@/components/auth";
-import { DailyFortune, ProfileForm, StepIndicator, ExpertTeam, ReportDisplay, DeductionForm, PARADIGMS, ANGLE_OPTIONS } from "@/components/start";
+import { DailyFortune, ProfileForm, NamingProfileForm, StepIndicator, NAMING_STEP_CONFIG, ExpertTeam, ReportDisplay, DeductionForm, PARADIGMS, ANGLE_OPTIONS } from "@/components/start";
+import { PaymentModal } from "@/components/start/PaymentModal";
 import { toInputDateTime } from "@/lib/utils";
+import type { ImageAttachment } from "@/components/paradigm-ui/ImageAttachmentField";
 
 const DRAFT_KEY = "yishu:start:draft:v1";
 const LAST_REPORT_KEY = "yishu:start:last-report:v1";
@@ -110,6 +112,25 @@ function StartPageContent() {
   const [partnerGender, setPartnerGender] = useState<string>("女");
   const [partnerBirthDate, setPartnerBirthDate] = useState<string>("");
   const [partnerBirthTime, setPartnerBirthTime] = useState<string>("");
+
+  const [childGender, setChildGender] = useState<"男" | "女">("男");
+  const [childBirthDate, setChildBirthDate] = useState<string>("");
+  const [childBirthTime, setChildBirthTime] = useState<string>("");
+  const [childBirthLocation, setChildBirthLocation] = useState<string>("");
+  const [fatherName, setFatherName] = useState<string>("");
+  const [fatherGender, setFatherGender] = useState<"男" | "女">("男");
+  const [fatherBirthDate, setFatherBirthDate] = useState<string>("");
+  const [fatherBirthTime, setFatherBirthTime] = useState<string>("");
+  const [motherName, setMotherName] = useState<string>("");
+  const [motherGender, setMotherGender] = useState<"男" | "女">("女");
+  const [motherBirthDate, setMotherBirthDate] = useState<string>("");
+  const [motherBirthTime, setMotherBirthTime] = useState<string>("");
+  const [namingPreference, setNamingPreference] = useState<string>("");
+  const [namingNameLengths, setNamingNameLengths] = useState<number[]>([2, 3]);
+  const [namingStyles, setNamingStyles] = useState<string[]>([]);
+  const [namingOtherStyle, setNamingOtherStyle] = useState<string>("");
+  const [namingMustInclude, setNamingMustInclude] = useState<string>("");
+  const [namingAvoid, setNamingAvoid] = useState<string>("");
   
   const [spaceType, setSpaceType] = useState<string>("住宅");
   const [spaceLayout, setSpaceLayout] = useState<string>("");
@@ -117,6 +138,7 @@ function StartPageContent() {
   const [travelDest, setTravelDest] = useState<string>("");
   const [travelDate, setTravelDate] = useState<string>("");
   const [travelPeers, setTravelPeers] = useState<string>("");
+  const [attachments, setAttachments] = useState<ImageAttachment[]>([]);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -132,6 +154,8 @@ function StartPageContent() {
   const [savingProfile, setSavingProfile] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<"daily" | "deduction">("deduction");
   const [feedbackScore, setFeedbackScore] = useState<number>(0);
+  
+  const [showPayment, setShowPayment] = useState<boolean>(false);
 
   useEffect(() => {
     if (!authLoading && auth.authenticated && !result) {
@@ -139,13 +163,42 @@ function StartPageContent() {
     }
   }, [authLoading, auth.authenticated, result]);
 
+  useEffect(() => {
+    if (analysisMode !== "naming") return;
+    setParadigm("naming");
+    setAngles(["八字"]);
+  }, [analysisMode]);
+
+  useEffect(() => {
+    if (analysisMode !== "naming") return;
+    if (!childBirthDate) {
+      setCurrentTime("");
+      return;
+    }
+    const timePart = /^\\d{2}:\\d{2}$/.test(childBirthTime) ? childBirthTime : "00:00";
+    const anchor = new Date(`${childBirthDate}T${timePart}:00`);
+    setCurrentTime(Number.isNaN(anchor.getTime()) ? "" : toInputDateTime(anchor.toISOString()));
+    setLocation(childBirthLocation.trim());
+  }, [analysisMode, childBirthDate, childBirthTime, childBirthLocation]);
+
+  const namingReady =
+    childBirthDate.length > 0 &&
+    childBirthLocation.trim().length >= 2 &&
+    fatherName.trim().length >= 2 &&
+    fatherBirthDate.length > 0 &&
+    motherName.trim().length >= 2 &&
+    motherBirthDate.length > 0;
   const profileReady =
-    name.trim().length >= 2 &&
-    birthDate.length > 0 &&
-    /^\d{2}:\d{2}$/.test(birthTime.trim()) &&
-    birthLocation.trim().length >= 2;
+    analysisMode === "naming"
+      ? namingReady
+      : name.trim().length >= 2 &&
+        birthDate.length > 0 &&
+        /^\d{2}:\d{2}$/.test(birthTime.trim()) &&
+        birthLocation.trim().length >= 2;
   const eventReady = question.trim().length >= 6 && eventBackground.trim().length >= 6;
-  const modeReady = analysisMode === "event" ? eventReady : true;
+  const imageRequired = analysisMode !== "naming" && ["fengshui", "palmistry", "physiognomy"].includes(paradigm);
+  const attachmentsReady = !imageRequired || attachments.length > 0;
+  const modeReady = (analysisMode === "event" ? eventReady : true) && attachmentsReady;
   const canSubmit = profileReady && currentTime.length > 0 && modeReady && !loading;
   const intent = useMemo(() => detectIntent(question), [question]);
   const canNextStep1 = profileReady;
@@ -159,7 +212,11 @@ function StartPageContent() {
     relationship: "关系适配",
     travel: "出行规划",
     fengshui_space: "空间风水",
+    naming: "五行取名",
   }[analysisMode];
+  const profileSummary = analysisMode === "naming"
+    ? (namingReady ? `孩子 · ${childGender}` : "待补全")
+    : (profileReady ? `${name} · ${gender}` : "待补全");
 
 
 
@@ -169,6 +226,12 @@ function StartPageContent() {
       setParadigm(paradigmParam);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!imageRequired && attachments.length > 0) {
+      setAttachments([]);
+    }
+  }, [imageRequired, attachments.length]);
 
   const sections = useMemo<ResultSections | null>(() => {
     if (!result) {
@@ -216,11 +279,29 @@ function StartPageContent() {
           urgency?: string;
           horizon?: string;
           mood?: string;
+          childGender?: "男" | "女";
+          childBirthDate?: string;
+          childBirthTime?: string;
+          childBirthLocation?: string;
+          fatherName?: string;
+          fatherGender?: "男" | "女";
+          fatherBirthDate?: string;
+          fatherBirthTime?: string;
+          motherName?: string;
+          motherGender?: "男" | "女";
+          motherBirthDate?: string;
+          motherBirthTime?: string;
+          namingPreference?: string;
+          namingNameLengths?: number[];
+          namingStyles?: string[];
+          namingOtherStyle?: string;
+          namingMustInclude?: string;
+          namingAvoid?: string;
         };
         if (parsed.paradigm) {
           setParadigm(parsed.paradigm);
         }
-        if (parsed.analysisMode === "event" || parsed.analysisMode === "natal" || parsed.analysisMode === "forecast") {
+        if (parsed.analysisMode === "event" || parsed.analysisMode === "natal" || parsed.analysisMode === "forecast" || parsed.analysisMode === "naming") {
           setAnalysisMode(parsed.analysisMode);
         }
         if (parsed.forecastWindow === "3m" || parsed.forecastWindow === "1y") {
@@ -280,6 +361,60 @@ function StartPageContent() {
         if (parsed.mood) {
           setMood(parsed.mood);
         }
+        if (parsed.childGender === "男" || parsed.childGender === "女") {
+          setChildGender(parsed.childGender);
+        }
+        if (parsed.childBirthDate) {
+          setChildBirthDate(parsed.childBirthDate);
+        }
+        if (parsed.childBirthTime) {
+          setChildBirthTime(parsed.childBirthTime);
+        }
+        if (parsed.childBirthLocation) {
+          setChildBirthLocation(parsed.childBirthLocation);
+        }
+        if (parsed.fatherName) {
+          setFatherName(parsed.fatherName);
+        }
+        if (parsed.fatherGender === "男" || parsed.fatherGender === "女") {
+          setFatherGender(parsed.fatherGender);
+        }
+        if (parsed.fatherBirthDate) {
+          setFatherBirthDate(parsed.fatherBirthDate);
+        }
+        if (parsed.fatherBirthTime) {
+          setFatherBirthTime(parsed.fatherBirthTime);
+        }
+        if (parsed.motherName) {
+          setMotherName(parsed.motherName);
+        }
+        if (parsed.motherGender === "男" || parsed.motherGender === "女") {
+          setMotherGender(parsed.motherGender);
+        }
+        if (parsed.motherBirthDate) {
+          setMotherBirthDate(parsed.motherBirthDate);
+        }
+        if (parsed.motherBirthTime) {
+          setMotherBirthTime(parsed.motherBirthTime);
+        }
+        if (parsed.namingPreference) {
+          setNamingPreference(parsed.namingPreference);
+        }
+        if (Array.isArray(parsed.namingNameLengths) && parsed.namingNameLengths.length > 0) {
+          setNamingNameLengths(parsed.namingNameLengths.filter((item) => item === 2 || item === 3));
+        }
+        if (Array.isArray(parsed.namingStyles)) {
+          setNamingStyles(parsed.namingStyles);
+        }
+        if (parsed.namingOtherStyle) {
+          setNamingOtherStyle(parsed.namingOtherStyle);
+        }
+        if (parsed.namingMustInclude) {
+          setNamingMustInclude(parsed.namingMustInclude);
+        }
+        if (parsed.namingAvoid) {
+          setNamingAvoid(parsed.namingAvoid);
+        }
       } catch {
         localStorage.removeItem(DRAFT_KEY);
       }
@@ -319,6 +454,24 @@ function StartPageContent() {
         urgency,
         horizon,
         mood,
+        childGender,
+        childBirthDate,
+        childBirthTime,
+        childBirthLocation,
+        fatherName,
+        fatherGender,
+        fatherBirthDate,
+        fatherBirthTime,
+        motherName,
+        motherGender,
+        motherBirthDate,
+        motherBirthTime,
+        namingPreference,
+        namingNameLengths,
+        namingStyles,
+        namingOtherStyle,
+        namingMustInclude,
+        namingAvoid,
       }),
     );
   }, [
@@ -343,6 +496,24 @@ function StartPageContent() {
     urgency,
     horizon,
     mood,
+    childGender,
+    childBirthDate,
+    childBirthTime,
+    childBirthLocation,
+    fatherName,
+    fatherGender,
+    fatherBirthDate,
+    fatherBirthTime,
+    motherName,
+    motherGender,
+    motherBirthDate,
+    motherBirthTime,
+    namingPreference,
+    namingNameLengths,
+    namingStyles,
+    namingOtherStyle,
+    namingMustInclude,
+    namingAvoid,
     draftLoaded,
   ]);
 
@@ -408,7 +579,12 @@ function StartPageContent() {
     }
   }
 
+  async function triggerPaymentFlow() {
+    setShowPayment(true);
+  }
+
   async function startDeduction() {
+    setShowPayment(false);
     setError("");
     setLoading(true);
     setSaveStatus("idle");
@@ -416,8 +592,10 @@ function StartPageContent() {
 
     try {
       const baseQuestion =
-        question.trim() ||
-        (analysisMode === "natal" ? "请给出我的整体命盘画像与长期发展建议" : "请给出最近阶段的命盘推进建议");
+        analysisMode === "naming"
+          ? namingPreference.trim() || "请依据五行取名并推荐姓氏"
+          : question.trim() ||
+            (analysisMode === "natal" ? "请给出我的整体命盘画像与长期发展建议" : "请给出最近阶段的命盘推进建议");
 
       let enrichedBackground = eventBackground.trim();
       if (analysisMode === "relationship") {
@@ -426,6 +604,10 @@ function StartPageContent() {
         enrichedBackground += `\n【空间信息】类型：${spaceType}，布局：${spaceLayout}`;
       } else if (analysisMode === "travel") {
         enrichedBackground += `\n【出行计划】目的地：${travelDest}，时间：${travelDate}，同行：${travelPeers}`;
+      } else if (analysisMode === "naming") {
+        enrichedBackground += `\n【孩子信息】性别：${childGender}，出生：${childBirthDate} ${childBirthTime}，出生地：${childBirthLocation}`;
+        enrichedBackground += `\n【父亲信息】姓名：${fatherName}，性别：${fatherGender}，生辰：${fatherBirthDate} ${fatherBirthTime}`;
+        enrichedBackground += `\n【母亲信息】姓名：${motherName}，性别：${motherGender}，生辰：${motherBirthDate} ${motherBirthTime}`;
       }
 
       const contextBlocks =
@@ -449,29 +631,63 @@ function StartPageContent() {
         throw new Error("起局时间格式不正确");
       }
       const normalizedCurrentTime = parsedTime.toISOString();
+      const resolvedParadigm = analysisMode === "naming" ? "naming" : paradigm;
+      const resolvedAngles = analysisMode === "naming" ? ["八字"] : angles;
+      const resolvedLocation = analysisMode === "naming" ? childBirthLocation.trim() : location;
+      const namingContext = analysisMode === "naming" ? {
+        child: {
+          gender: childGender,
+          birthDate: childBirthDate.trim(),
+          birthTime: childBirthTime.trim(),
+          birthLocation: childBirthLocation.trim(),
+        },
+        father: {
+          name: fatherName.trim(),
+          gender: fatherGender,
+          birthDate: fatherBirthDate.trim(),
+          birthTime: fatherBirthTime.trim(),
+        },
+        mother: {
+          name: motherName.trim(),
+          gender: motherGender,
+          birthDate: motherBirthDate.trim(),
+          birthTime: motherBirthTime.trim(),
+        },
+        preferences: {
+          nameLengths: namingNameLengths.length > 0 ? namingNameLengths : [2, 3],
+          styles: namingStyles,
+          otherStyle: namingOtherStyle.trim(),
+          mustIncludeChars: namingMustInclude.trim(),
+          avoidChars: namingAvoid.trim(),
+          notes: namingPreference.trim(),
+        },
+      } : undefined;
+      const profilePayload = analysisMode === "naming" ? undefined : {
+        name: name.trim(),
+        gender,
+        birthDate: birthDate.trim(),
+        birthTime: birthTime.trim(),
+        birthLocation: birthLocation.trim(),
+        currentResidence: currentResidence.trim(),
+        pastResidences: pastResidences.trim(),
+        experienceNarrative: experienceNarrative.trim(),
+        currentStatus: currentStatus.trim(),
+        futureVision: futureVision.trim(),
+      };
       const response = await fetch("/api/inference/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          paradigm,
+          paradigm: resolvedParadigm,
           analysisMode,
           forecastWindow,
-          angles,
+          angles: resolvedAngles,
           question: baseQuestion,
           currentTime: normalizedCurrentTime,
-          location,
-          profile: {
-            name: name.trim(),
-            gender,
-            birthDate: birthDate.trim(),
-            birthTime: birthTime.trim(),
-            birthLocation: birthLocation.trim(),
-            currentResidence: currentResidence.trim(),
-            pastResidences: pastResidences.trim(),
-            experienceNarrative: experienceNarrative.trim(),
-            currentStatus: currentStatus.trim(),
-            futureVision: futureVision.trim(),
-          },
+          location: resolvedLocation,
+          profile: profilePayload,
+          namingContext,
+          attachments: imageRequired ? attachments : undefined,
           eventContext: {
             background: enrichedBackground || `${modeLabel}基础推演`,
             urgency,
@@ -491,7 +707,7 @@ function StartPageContent() {
       setResult({
           result: "",
           meta: {
-            paradigm,
+            paradigm: resolvedParadigm,
             paradigmLabel: modeLabel,
             model: "streaming...",
             reference: "",
@@ -538,7 +754,7 @@ function StartPageContent() {
       const data = {
           result: streamResult,
           meta: {
-              paradigm,
+              paradigm: resolvedParadigm,
               paradigmLabel: modeLabel,
               model: "anthropic/claude-3.5-sonnet",
               reference: "",
@@ -562,7 +778,7 @@ function StartPageContent() {
         paradigm: data.meta.paradigm,
         paradigmLabel: data.meta.paradigmLabel,
         question: enrichedQuestion,
-        location: location.trim(),
+        location: resolvedLocation.trim(),
         currentTime: normalizedCurrentTime,
         result: data.result,
         model: data.meta.model,
@@ -590,7 +806,7 @@ function StartPageContent() {
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
-    void startDeduction();
+    void triggerPaymentFlow();
   }
 
   function moveStep(next: Step) {
@@ -681,7 +897,7 @@ function StartPageContent() {
                 <h2 className="text-lg font-song text-gold-light">三步问询</h2>
               </CardHeader>
               <CardContent>
-                <StepIndicator currentStep={step} onStepChange={moveStep} />
+                <StepIndicator currentStep={step} onStepChange={moveStep} steps={analysisMode === "naming" ? NAMING_STEP_CONFIG : undefined} />
               </CardContent>
             </Card>
 
@@ -693,22 +909,28 @@ function StartPageContent() {
                 <form onSubmit={onSubmit} className="space-y-6">
                   {step === 1 ? (
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <p className="text-sm text-xuanpaper/80">核心术数模型</p>
-                        <div className="flex flex-wrap gap-2">
-                          {PARADIGMS.map((item: {id: string, label: string}) => (
-                            <Button
-                              key={item.id}
-                              type="button"
-                              size="sm"
-                              variant={paradigm === item.id ? "primary" : "outline"}
-                              onClick={() => setParadigm(item.id)}
-                            >
-                              {item.label}
-                            </Button>
-                          ))}
+                      {analysisMode === "naming" ? (
+                        <div className="rounded-sm border border-gold-line/20 bg-black/10 p-3 text-sm text-xuanpaper/70">
+                          目标范式已锁定为：五行取名
                         </div>
-                      </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-sm text-xuanpaper/80">核心术数模型</p>
+                          <div className="flex flex-wrap gap-2">
+                            {PARADIGMS.map((item: {id: string, label: string}) => (
+                              <Button
+                                key={item.id}
+                                type="button"
+                                size="sm"
+                                variant={paradigm === item.id ? "primary" : "outline"}
+                                onClick={() => setParadigm(item.id)}
+                              >
+                                {item.label}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <p className="text-sm text-xuanpaper/80">推演模式</p>
@@ -719,6 +941,7 @@ function StartPageContent() {
                           <Button key="relationship" type="button" size="sm" variant={analysisMode === "relationship" ? "primary" : "outline"} onClick={() => setAnalysisMode("relationship")}>关系适配 (合盘对看)</Button>
                           <Button key="fengshui_space" type="button" size="sm" variant={analysisMode === "fengshui_space" ? "primary" : "outline"} onClick={() => setAnalysisMode("fengshui_space")}>空间风水 (环境能量)</Button>
                           <Button key="travel" type="button" size="sm" variant={analysisMode === "travel" ? "primary" : "outline"} onClick={() => setAnalysisMode("travel")}>出行规划 (时空选择)</Button>
+                          <Button key="naming" type="button" size="sm" variant={analysisMode === "naming" ? "primary" : "outline"} onClick={() => setAnalysisMode("naming")}>五行取名 (互补数理)</Button>
                         </div>
                       </div>
 
@@ -732,53 +955,73 @@ function StartPageContent() {
                         </div>
                       ) : null}
 
-                      <div className="space-y-2">
-                        <p className="text-sm text-xuanpaper/80">会诊视角</p>
-                        <div className="flex flex-wrap gap-2">
-                          {ANGLE_OPTIONS.map((item: string) => {
-                            const active = angles.includes(item);
-                            return (
-                              <Button
-                                key={item}
-                                type="button"
-                                size="sm"
-                                variant={active ? "primary" : "outline"}
-                                onClick={() =>
-                                  setAngles((prev: string[]) =>
-                                    prev.includes(item) ? (prev.length === 1 ? prev : prev.filter((value: string) => value !== item)) : [...prev, item],
-                                  )
-                                }
-                              >
-                                {item}
-                              </Button>
-                            );
-                          })}
+                      {analysisMode === "naming" ? null : (
+                        <div className="space-y-2">
+                          <p className="text-sm text-xuanpaper/80">会诊视角</p>
+                          <div className="flex flex-wrap gap-2">
+                            {ANGLE_OPTIONS.map((item: string) => {
+                              const active = angles.includes(item);
+                              return (
+                                <Button
+                                  key={item}
+                                  type="button"
+                                  size="sm"
+                                  variant={active ? "primary" : "outline"}
+                                  onClick={() =>
+                                    setAngles((prev: string[]) =>
+                                      prev.includes(item) ? (prev.length === 1 ? prev : prev.filter((value: string) => value !== item)) : [...prev, item],
+                                    )
+                                  }
+                                >
+                                  {item}
+                                </Button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      <ProfileForm
-                        name={name} setName={setName}
-                        gender={gender} setGender={setGender}
-                        birthDate={birthDate} setBirthDate={setBirthDate}
-                        birthTime={birthTime} setBirthTime={setBirthTime}
-                        birthLocation={birthLocation} setBirthLocation={setBirthLocation}
-                        currentResidence={currentResidence} setCurrentResidence={setCurrentResidence}
-                        pastResidences={pastResidences} setPastResidences={setPastResidences}
-                        experienceNarrative={experienceNarrative} setExperienceNarrative={setExperienceNarrative}
-                        currentStatus={currentStatus} setCurrentStatus={setCurrentStatus}
-                        futureVision={futureVision} setFutureVision={setFutureVision}
-                        profileReady={profileReady}
-                        authenticated={auth.authenticated}
-                        onSaveProfile={onSaveProfile}
-                        savingProfile={savingProfile}
-                        profileStatus={profileStatus}
-                      />
+                      {analysisMode === "naming" ? (
+                        <NamingProfileForm
+                          childGender={childGender} setChildGender={setChildGender}
+                          childBirthDate={childBirthDate} setChildBirthDate={setChildBirthDate}
+                          childBirthTime={childBirthTime} setChildBirthTime={setChildBirthTime}
+                          childBirthLocation={childBirthLocation} setChildBirthLocation={setChildBirthLocation}
+                          fatherName={fatherName} setFatherName={setFatherName}
+                          fatherGender={fatherGender} setFatherGender={setFatherGender}
+                          fatherBirthDate={fatherBirthDate} setFatherBirthDate={setFatherBirthDate}
+                          fatherBirthTime={fatherBirthTime} setFatherBirthTime={setFatherBirthTime}
+                          motherName={motherName} setMotherName={setMotherName}
+                          motherGender={motherGender} setMotherGender={setMotherGender}
+                          motherBirthDate={motherBirthDate} setMotherBirthDate={setMotherBirthDate}
+                          motherBirthTime={motherBirthTime} setMotherBirthTime={setMotherBirthTime}
+                          namingReady={namingReady}
+                        />
+                      ) : (
+                        <ProfileForm
+                          name={name} setName={setName}
+                          gender={gender} setGender={setGender}
+                          birthDate={birthDate} setBirthDate={setBirthDate}
+                          birthTime={birthTime} setBirthTime={setBirthTime}
+                          birthLocation={birthLocation} setBirthLocation={setBirthLocation}
+                          currentResidence={currentResidence} setCurrentResidence={setCurrentResidence}
+                          pastResidences={pastResidences} setPastResidences={setPastResidences}
+                          experienceNarrative={experienceNarrative} setExperienceNarrative={setExperienceNarrative}
+                          currentStatus={currentStatus} setCurrentStatus={setCurrentStatus}
+                          futureVision={futureVision} setFutureVision={setFutureVision}
+                          profileReady={profileReady}
+                          authenticated={auth.authenticated}
+                          onSaveProfile={onSaveProfile}
+                          savingProfile={savingProfile}
+                          profileStatus={profileStatus}
+                        />
+                      )}
                     </div>
                   ) : null}
 
                   <DeductionForm 
                     step={step} moveStep={moveStep} canNextStep1={canNextStep1} canNextStep2={canNextStep2}
-                    canSubmit={canSubmit} loading={loading} startDeduction={startDeduction}
+                    canSubmit={canSubmit} loading={loading} startDeduction={triggerPaymentFlow}
                     paradigm={paradigm} setParadigm={setParadigm} analysisMode={analysisMode} setAnalysisMode={setAnalysisMode}
                     forecastWindow={forecastWindow} setForecastWindow={setForecastWindow} angles={angles} setAngles={setAngles}
                     currentTime={currentTime} setCurrentTime={setCurrentTime} location={location} setLocation={setLocation}
@@ -788,11 +1031,28 @@ function StartPageContent() {
                     partnerBirthDate={partnerBirthDate} setPartnerBirthDate={setPartnerBirthDate} partnerBirthTime={partnerBirthTime} setPartnerBirthTime={setPartnerBirthTime}
                     spaceType={spaceType} setSpaceType={setSpaceType} spaceLayout={spaceLayout} setSpaceLayout={setSpaceLayout}
                     travelDest={travelDest} setTravelDest={setTravelDest} travelDate={travelDate} setTravelDate={setTravelDate} travelPeers={travelPeers} setTravelPeers={setTravelPeers}
+                    namingPreference={namingPreference} setNamingPreference={setNamingPreference}
+                    namingNameLengths={namingNameLengths} setNamingNameLengths={setNamingNameLengths}
+                    namingStyles={namingStyles} setNamingStyles={setNamingStyles}
+                    namingOtherStyle={namingOtherStyle} setNamingOtherStyle={setNamingOtherStyle}
+                    namingMustInclude={namingMustInclude} setNamingMustInclude={setNamingMustInclude}
+                    namingAvoid={namingAvoid} setNamingAvoid={setNamingAvoid}
+                    imageRequired={imageRequired}
+                    attachments={attachments}
+                    setAttachments={setAttachments}
                     name={name} modeLabel={modeLabel}
                   />
                 </form>
               </CardContent>
             </Card>
+
+            <PaymentModal
+              isOpen={showPayment}
+              onClose={() => setShowPayment(false)}
+              onSuccess={() => startDeduction()}
+              paradigm={analysisMode === "naming" ? "naming" : paradigm}
+              name={analysisMode === "naming" ? "起名推演" : name}
+            />
 
             <Card className="border-gold-line/40 bg-xuangray/70">
               <CardHeader>
@@ -802,7 +1062,7 @@ function StartPageContent() {
                 <div className="grid gap-2 md:grid-cols-2">
                   <div className="rounded-xl border border-gold-line/30 bg-black/10 p-3">
                     <p className="text-xs text-xuanpaper/60">个人底盘</p>
-                    <p className="mt-1 text-sm text-gold-light">{profileReady ? `${name} · ${gender}` : "待补全"}</p>
+                    <p className="mt-1 text-sm text-gold-light">{profileSummary}</p>
                   </div>
                   <div className="rounded-xl border border-gold-line/30 bg-black/10 p-3">
                     <p className="text-xs text-xuanpaper/60">时空锚点</p>
@@ -811,14 +1071,16 @@ function StartPageContent() {
                 </div>
                 <div className="rounded-xl border border-gold-line/30 bg-black/10 p-3">
                   <p className="text-xs text-xuanpaper/60">推演焦点</p>
-                  <p className="mt-1 text-sm leading-7 text-xuanpaper/85">
-                    {question.trim() ||
-                      (analysisMode === "event"
-                        ? "请输入你的核心问题，系统会按范式生成团队会诊报告。"
-                        : analysisMode === "natal"
-                          ? "整体命盘模式将输出长期结构、优势短板与行动主线。"
-                          : "阶段推进模式将输出窗口节奏、阶段机会与风险主题。")}
-                  </p>
+                    <p className="mt-1 text-sm leading-7 text-xuanpaper/85">
+                      {question.trim() ||
+                        (analysisMode === "event"
+                          ? "请输入你的核心问题，系统会按范式生成团队会诊报告。"
+                          : analysisMode === "natal"
+                            ? "整体命盘模式将输出长期结构、优势短板与行动主线。"
+                            : analysisMode === "naming"
+                              ? "五行取名模式将输出姓氏推荐与名字清单。"
+                              : "阶段推进模式将输出窗口节奏、阶段机会与风险主题。")}
+                    </p>
                 </div>
               </CardContent>
             </Card>

@@ -57,6 +57,122 @@ export function validateProfile(profileInput: InferencePayload["profile"]) {
   };
 }
 
+export function validateNamingContext(namingInput: InferencePayload["namingContext"]) {
+  const child = namingInput?.child ?? {};
+  const father = namingInput?.father ?? {};
+  const mother = namingInput?.mother ?? {};
+  const preferences = namingInput?.preferences ?? {};
+
+  const childGender = (child.gender ?? "").trim();
+  const childBirthDate = (child.birthDate ?? "").trim();
+  const childBirthTime = (child.birthTime ?? "").trim();
+  const childBirthLocation = (child.birthLocation ?? "").trim();
+
+  if (childGender !== "男" && childGender !== "女") {
+    throw new Error("孩子性别仅支持男或女");
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(childBirthDate)) {
+    throw new Error("孩子出生日期格式错误");
+  }
+  if (childBirthTime && !/^\d{2}:\d{2}$/.test(childBirthTime)) {
+    throw new Error("孩子出生时间格式错误");
+  }
+  if (childBirthLocation.length < 2 || childBirthLocation.length > 40) {
+    throw new Error("孩子出生地长度需在2-40字符");
+  }
+
+  const fatherName = (father.name ?? "").trim();
+  const fatherGender = (father.gender ?? "").trim();
+  const fatherBirthDate = (father.birthDate ?? "").trim();
+  const fatherBirthTime = (father.birthTime ?? "").trim();
+
+  if (fatherName.length < 2 || fatherName.length > 20) {
+    throw new Error("父亲姓名长度需在2-20字符");
+  }
+  if (fatherGender !== "男" && fatherGender !== "女") {
+    throw new Error("父亲性别仅支持男或女");
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fatherBirthDate)) {
+    throw new Error("父亲出生日期格式错误");
+  }
+  if (fatherBirthTime && !/^\d{2}:\d{2}$/.test(fatherBirthTime)) {
+    throw new Error("父亲出生时间格式错误");
+  }
+
+  const motherName = (mother.name ?? "").trim();
+  const motherGender = (mother.gender ?? "").trim();
+  const motherBirthDate = (mother.birthDate ?? "").trim();
+  const motherBirthTime = (mother.birthTime ?? "").trim();
+
+  if (motherName.length < 2 || motherName.length > 20) {
+    throw new Error("母亲姓名长度需在2-20字符");
+  }
+  if (motherGender !== "男" && motherGender !== "女") {
+    throw new Error("母亲性别仅支持男或女");
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(motherBirthDate)) {
+    throw new Error("母亲出生日期格式错误");
+  }
+  if (motherBirthTime && !/^\d{2}:\d{2}$/.test(motherBirthTime)) {
+    throw new Error("母亲出生时间格式错误");
+  }
+
+  const lengthCandidates = Array.isArray(preferences.nameLengths) ? preferences.nameLengths : [];
+  const allowedLengths = lengthCandidates.filter((item) => item === 2 || item === 3);
+  const nameLengths = allowedLengths.length > 0 ? Array.from(new Set(allowedLengths)) : [2, 3];
+
+  const allowedStyles = new Set(["传统", "现代", "文雅", "中性", "其他"]);
+  const styles = Array.isArray(preferences.styles)
+    ? Array.from(new Set(preferences.styles.map((item) => item.trim()).filter((item) => allowedStyles.has(item))))
+    : [];
+  const otherStyle = (preferences.otherStyle ?? "").trim();
+  const mustIncludeChars = (preferences.mustIncludeChars ?? "").trim();
+  const avoidChars = (preferences.avoidChars ?? "").trim();
+  const notes = (preferences.notes ?? "").trim();
+
+  if (otherStyle.length > 20) {
+    throw new Error("其他风格描述不可超过20字符");
+  }
+  if (mustIncludeChars.length > 20) {
+    throw new Error("必用字长度不可超过20字符");
+  }
+  if (avoidChars.length > 20) {
+    throw new Error("禁用字长度不可超过20字符");
+  }
+  if (notes.length > 200) {
+    throw new Error("命名偏好补充不可超过200字符");
+  }
+
+  return {
+    child: {
+      gender: childGender,
+      birthDate: childBirthDate,
+      birthTime: childBirthTime || undefined,
+      birthLocation: childBirthLocation.slice(0, 40),
+    },
+    father: {
+      name: fatherName.slice(0, 20),
+      gender: fatherGender,
+      birthDate: fatherBirthDate,
+      birthTime: fatherBirthTime || undefined,
+    },
+    mother: {
+      name: motherName.slice(0, 20),
+      gender: motherGender,
+      birthDate: motherBirthDate,
+      birthTime: motherBirthTime || undefined,
+    },
+    preferences: {
+      nameLengths,
+      styles,
+      otherStyle: otherStyle || undefined,
+      mustIncludeChars: mustIncludeChars || undefined,
+      avoidChars: avoidChars || undefined,
+      notes: notes || undefined,
+    },
+  };
+}
+
 export function validateEventContext(eventInput: InferencePayload["eventContext"], question: string) {
   const background = (eventInput?.background ?? "").trim();
   const urgency = (eventInput?.urgency ?? "").trim();
@@ -86,8 +202,8 @@ export function validateEventContext(eventInput: InferencePayload["eventContext"
 }
 
 export function validateMode(modeInput: InferencePayload["analysisMode"]) {
-  if (modeInput === "event" || modeInput === "natal" || modeInput === "forecast" || modeInput === "relationship" || modeInput === "travel" || modeInput === "fengshui_space") {
-    return modeInput;
+  if (modeInput === "event" || modeInput === "natal" || modeInput === "forecast" || modeInput === "relationship" || modeInput === "travel" || modeInput === "fengshui_space" || modeInput === "naming") {
+    return modeInput as "event" | "natal" | "forecast" | "relationship" | "travel" | "fengshui_space" | "naming";
   }
   return "event" as const;
 }
@@ -118,6 +234,7 @@ export function defaultAnglesForParadigm(paradigm: string): string[] {
   if (paradigm === "tarot") return ["塔罗"];
   if (paradigm === "palmistry") return ["手相"];
   if (paradigm === "physiognomy") return ["面相"];
+  if (paradigm === "naming") return ["八字"];
   if (paradigm === "composite") return ["八字", "星座", "塔罗"];
   return ["八字"];
 }

@@ -1,11 +1,39 @@
 export type InferencePayload = {
   paradigm?: string;
-  analysisMode?: "event" | "natal" | "forecast" | "relationship" | "travel" | "fengshui_space";
+  analysisMode?: "event" | "natal" | "forecast" | "relationship" | "travel" | "fengshui_space" | "naming";
   forecastWindow?: "3m" | "1y";
   angles?: string[];
   question?: string;
   currentTime?: string;
   location?: string;
+  namingContext?: {
+    child?: {
+      gender?: string;
+      birthDate?: string;
+      birthTime?: string;
+      birthLocation?: string;
+    };
+    father?: {
+      name?: string;
+      gender?: string;
+      birthDate?: string;
+      birthTime?: string;
+    };
+    mother?: {
+      name?: string;
+      gender?: string;
+      birthDate?: string;
+      birthTime?: string;
+    };
+    preferences?: {
+      nameLengths?: number[];
+      styles?: string[];
+      otherStyle?: string;
+      mustIncludeChars?: string;
+      avoidChars?: string;
+      notes?: string;
+    };
+  };
   profile?: {
     name?: string;
     gender?: string;

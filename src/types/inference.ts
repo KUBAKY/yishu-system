@@ -1,4 +1,4 @@
-export type AnalysisMode = "event" | "natal" | "forecast" | "relationship" | "travel" | "fengshui_space";
+export type AnalysisMode = "event" | "natal" | "forecast" | "relationship" | "travel" | "fengshui_space" | "naming";
 export type ForecastWindow = "3m" | "1y";
 export type ReportView = "overview" | "evidence" | "action" | "risk" | "full";
 export type Step = 1 | 2 | 3;

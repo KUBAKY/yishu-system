@@ -6,18 +6,26 @@ export const STEP_CONFIG: Array<{ step: Step; title: string; summary: string }> 
   { step: 3, title: "事件补全", summary: "补足背景与情绪，提升建议命中" },
 ];
 
+export const NAMING_STEP_CONFIG: Array<{ step: Step; title: string; summary: string }> = [
+  { step: 1, title: "孩子与父母信息", summary: "补齐生辰与父母信息，建立命名底盘" },
+  { step: 2, title: "生辰锚定", summary: "以孩子出生时间与地点作为推演锚点" },
+  { step: 3, title: "命名偏好", summary: "补充偏好与避讳，优化名字推荐" },
+];
+
 export interface StepIndicatorProps {
   currentStep: Step;
   onStepChange: (step: Step) => void;
+  steps?: Array<{ step: Step; title: string; summary: string }>;
 }
 
-export function StepIndicator({ currentStep, onStepChange }: StepIndicatorProps) {
-  const activeStepCopy = STEP_CONFIG.find((s) => s.step === currentStep);
+export function StepIndicator({ currentStep, onStepChange, steps }: StepIndicatorProps) {
+  const config = steps ?? STEP_CONFIG;
+  const activeStepCopy = config.find((s) => s.step === currentStep);
 
   return (
     <>
       <div className="grid gap-3 md:grid-cols-3">
-        {STEP_CONFIG.map((item) => (
+        {config.map((item) => (
           <button
             key={item.step}
             type="button"

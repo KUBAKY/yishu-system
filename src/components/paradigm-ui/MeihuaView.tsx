@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { toInputDateTime } from "@/lib/utils";
 
 const TRIGRAMS = [
   { name: "乾", symbol: "☰", nature: "天" },
@@ -25,7 +26,7 @@ export function MeihuaView() {
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthLocation, setBirthLocation] = useState("");
-  const [currentTime, setCurrentTime] = useState(() => new Date().toISOString().slice(0, 16));
+  const [currentTime, setCurrentTime] = useState(() => toInputDateTime(new Date().toISOString()));
   const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -72,7 +73,8 @@ export function MeihuaView() {
       if (Number.isNaN(parsed.getTime())) {
         throw new Error("起局时间格式不正确");
       }
-      const context = `梅花易数：上卦为${TRIGRAMS[upper].name}(${TRIGRAMS[upper].nature})，下卦为${TRIGRAMS[lower].name}(${TRIGRAMS[lower].nature})，动爻在第${moving}爻。问题：${question.trim()}。`;
+      const tag = `MEIHUA::upper=${TRIGRAMS[upper].name};lower=${TRIGRAMS[lower].name};moving=${moving}`;
+      const context = `${tag}\n梅花易数：上卦为${TRIGRAMS[upper].name}(${TRIGRAMS[upper].nature})，下卦为${TRIGRAMS[lower].name}(${TRIGRAMS[lower].nature})，动爻在第${moving}爻。问题：${question.trim()}。`;
       const response = await fetch("/api/inference", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

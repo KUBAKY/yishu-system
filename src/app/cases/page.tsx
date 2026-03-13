@@ -295,7 +295,7 @@ export default function CasesPage() {
                                 <div className="h-6 w-1 rounded-full bg-gold-light/60" />
                                 {title}
                               </div>
-                              <div className="rounded-full bg-xuangray/70 p-2 border border-white/5 group-hover:border-[var(--color-gold-line)]/30 transition-colors">
+                              <div className="rounded-full bg-xuangray/70 p-2 border border-white/5 group-hover:border-(--color-gold-line)/30 transition-colors">
                                 {content}
                               </div>
                             </div>

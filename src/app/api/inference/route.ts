@@ -7,7 +7,7 @@ import { appendCase } from "@/lib/cases-store";
 
 import { InferencePayload } from "@/lib/inference/types";
 import { getParadigmSpec, buildFoundationModules, buildLunarContext } from "@/lib/inference/prompt-builder";
-import { validateMode, resolveAngles, validateAttachments, validateEventContext } from "@/lib/inference/validator";
+import { validateMode, resolveAngles, validateAttachments, validateEventContext, validateNamingContext } from "@/lib/inference/validator";
 import { runInferencePipeline, InferencePipelineContext } from "@/lib/inference/pipeline";
 
 export async function POST(request: NextRequest) {
@@ -41,16 +41,30 @@ export async function POST(request: NextRequest) {
   }
 
   let eventContext = { background: "", urgency: "", horizon: "", mood: "" };
+  let namingContext: ReturnType<typeof validateNamingContext> | undefined;
   let angles: ReturnType<typeof resolveAngles>;
   let attachments: ReturnType<typeof validateAttachments> = [];
+  const isNaming = analysisMode === "naming" || paradigm === "naming";
   const normalizedQuestion =
-    question || (analysisMode === "natal" ? "请给出我的整体命盘画像与长期指引" : "请给出阶段命盘推进建议");
+    question ||
+    (isNaming
+      ? "请依据五行取名并推荐姓氏"
+      : analysisMode === "natal"
+        ? "请给出我的整体命盘画像与长期指引"
+        : "请给出阶段命盘推进建议");
   
   try {
     angles = resolveAngles(paradigm, payload.angles);
     attachments = validateAttachments(payload.attachments);
+    const requiresImage = paradigm === "fengshui" || paradigm === "palmistry" || paradigm === "physiognomy";
+    if (requiresImage && attachments.length === 0) {
+      throw new Error("该专项至少上传1张图片");
+    }
     if (analysisMode === "event") {
       eventContext = validateEventContext(payload.eventContext, normalizedQuestion);
+    }
+    if (isNaming) {
+      namingContext = validateNamingContext(payload.namingContext);
     }
   } catch (error) {
     return NextResponse.json(
@@ -63,7 +77,7 @@ export async function POST(request: NextRequest) {
   const foundationModules = buildFoundationModules(paradigm, angles);
 
   const promptCitations = await retrieveClassicalCitations({
-    paradigm: paradigm === "composite" ? "bazi" : paradigm,
+    paradigm: paradigm === "composite" || paradigm === "naming" ? "bazi" : paradigm,
     question: normalizedQuestion,
     limit: 2,
   });
@@ -89,7 +103,8 @@ export async function POST(request: NextRequest) {
     spec,
     foundationModules,
     citations: citationsForContext,
-    lunarContext: lunarContext ? `${lunarContext.solarDate} ${lunarContext.lunarDate} ${lunarContext.ganzhi}` : null
+    lunarContext: lunarContext ? `${lunarContext.solarDate} ${lunarContext.lunarDate} ${lunarContext.ganzhi}` : null,
+    namingContext,
   };
 
   let finalResult = "";

@@ -330,42 +330,25 @@ export type MeihuaData = {
 const BAGUA_NAME: Record<number, string> = { 1: "乾", 2: "兑", 3: "离", 4: "震", 5: "巽", 6: "坎", 7: "艮", 8: "坤" };
 const BAGUA_WUXING: Record<number, string> = { 1: "金", 2: "金", 3: "火", 4: "木", 5: "木", 6: "水", 7: "土", 8: "土" };
 
-export function getMeihuaData(date: Date): MeihuaData {
-  const solar = Solar.fromDate(date);
-  const lunar = solar.getLunar() as any;
-  
-  const yearNum = lunar.getYearZhiIndex() + 1;
-  const monthNum = lunar.getMonth();
-  const dayNum = Math.abs(lunar.getDay());
-  const hourNum = lunar.getTimeZhiIndex() + 1;
-  
-  let upperNum = (yearNum + monthNum + dayNum) % 8;
-  if (upperNum === 0) upperNum = 8;
-  
-  let lowerNum = (yearNum + monthNum + dayNum + hourNum) % 8;
-  if (lowerNum === 0) lowerNum = 8;
-  
-  let movingLine = (yearNum + monthNum + dayNum + hourNum) % 6;
-  if (movingLine === 0) movingLine = 6;
-  
-  const BAGUA_DECIMAL: Record<number, number> = { 1: 7, 2: 3, 3: 5, 4: 1, 5: 6, 6: 2, 7: 4, 8: 0 };
-  const getLines = (num: number) => {
-    const dec = BAGUA_DECIMAL[num] || 0;
-    return [dec & 1, (dec >> 1) & 1, (dec >> 2) & 1];
-  };
-  
+const BAGUA_DECIMAL: Record<number, number> = { 1: 7, 2: 3, 3: 5, 4: 1, 5: 6, 6: 2, 7: 4, 8: 0 };
+const getLines = (num: number) => {
+  const dec = BAGUA_DECIMAL[num] || 0;
+  return [dec & 1, (dec >> 1) & 1, (dec >> 2) & 1];
+};
+
+function computeMeihuaData(upperNum: number, lowerNum: number, movingLine: number): MeihuaData {
   const lowerLines = getLines(lowerNum);
   const upperLines = getLines(upperNum);
   const benLines = [...lowerLines, ...upperLines];
   const benName = getGuaName(benLines);
-  
+
   const huLines = [benLines[1], benLines[2], benLines[3], benLines[2], benLines[3], benLines[4]];
   const huName = getGuaName(huLines);
-  
+
   const bianLines = [...benLines];
   bianLines[movingLine - 1] = bianLines[movingLine - 1] === 1 ? 0 : 1;
   const bianName = getGuaName(bianLines);
-  
+
   let tiNum = 0, yongNum = 0;
   if (movingLine <= 3) {
     tiNum = upperNum;
@@ -374,15 +357,40 @@ export function getMeihuaData(date: Date): MeihuaData {
     tiNum = lowerNum;
     yongNum = upperNum;
   }
-  
+
   return {
     ben: benName,
     hu: huName,
     bian: bianName,
     movingLine,
     ti: { name: BAGUA_NAME[tiNum], wuxing: BAGUA_WUXING[tiNum] },
-    yong: { name: BAGUA_NAME[yongNum], wuxing: BAGUA_WUXING[yongNum] }
+    yong: { name: BAGUA_NAME[yongNum], wuxing: BAGUA_WUXING[yongNum] },
   };
+}
+
+export function getMeihuaDataFromTrigrams(upperNum: number, lowerNum: number, movingLine: number): MeihuaData {
+  return computeMeihuaData(upperNum, lowerNum, movingLine);
+}
+
+export function getMeihuaData(date: Date): MeihuaData {
+  const solar = Solar.fromDate(date);
+  const lunar = solar.getLunar() as any;
+
+  const yearNum = lunar.getYearZhiIndex() + 1;
+  const monthNum = lunar.getMonth();
+  const dayNum = Math.abs(lunar.getDay());
+  const hourNum = lunar.getTimeZhiIndex() + 1;
+
+  let upperNum = (yearNum + monthNum + dayNum) % 8;
+  if (upperNum === 0) upperNum = 8;
+
+  let lowerNum = (yearNum + monthNum + dayNum + hourNum) % 8;
+  if (lowerNum === 0) lowerNum = 8;
+
+  let movingLine = (yearNum + monthNum + dayNum + hourNum) % 6;
+  if (movingLine === 0) movingLine = 6;
+
+  return computeMeihuaData(upperNum, lowerNum, movingLine);
 }
 
 export type ZodiacData = {

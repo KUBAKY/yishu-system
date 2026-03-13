@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction } from "react";
 import { Button } from "@/components/ui/Button";
+import { ImageAttachmentField, type ImageAttachment } from "@/components/paradigm-ui/ImageAttachmentField";
 import { Step, AnalysisMode, ForecastWindow } from "@/types/inference";
 import { QUICK_LOCATIONS } from "./constants";
 import { toInputDateTime } from "@/lib/utils";
@@ -59,15 +60,48 @@ export interface DeductionFormProps {
   travelPeers: string;
   setTravelPeers: Dispatch<SetStateAction<string>>;
 
+  namingPreference: string;
+  setNamingPreference: Dispatch<SetStateAction<string>>;
+  namingNameLengths: number[];
+  setNamingNameLengths: Dispatch<SetStateAction<number[]>>;
+  namingStyles: string[];
+  setNamingStyles: Dispatch<SetStateAction<string[]>>;
+  namingOtherStyle: string;
+  setNamingOtherStyle: Dispatch<SetStateAction<string>>;
+  namingMustInclude: string;
+  setNamingMustInclude: Dispatch<SetStateAction<string>>;
+  namingAvoid: string;
+  setNamingAvoid: Dispatch<SetStateAction<string>>;
+
+  imageRequired: boolean;
+  attachments: ImageAttachment[];
+  setAttachments: Dispatch<SetStateAction<ImageAttachment[]>>;
+
   name: string;
   modeLabel: string;
 }
 
 export function DeductionForm(props: DeductionFormProps) {
+  const isNaming = props.analysisMode === "naming";
+  const summaryName = isNaming ? "孩子信息" : props.name || "未填姓名";
+  const attachmentCategory =
+    props.paradigm === "fengshui" ? "平面图" : props.paradigm === "palmistry" ? "手掌照" : "面部照";
+  const allowCamera = props.paradigm === "palmistry" || props.paradigm === "physiognomy";
+  const toggleNamingLength = (value: number) => {
+    props.setNamingNameLengths((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]));
+  };
+  const toggleNamingStyle = (value: string) => {
+    props.setNamingStyles((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]));
+  };
   return (
     <>
       {props.step === 2 ? (
         <div className="space-y-4">
+          {isNaming ? (
+            <div className="rounded-sm border border-gold-line/20 bg-black/10 p-4 text-sm text-xuanpaper/70">
+              已根据孩子出生信息自动锁定起局时间与地点，如需修改请返回上一步调整生辰信息。
+            </div>
+          ) : null}
           <label className="block space-y-2">
             <span className="text-sm text-xuanpaper/80">起局时间</span>
             <input
@@ -75,6 +109,7 @@ export function DeductionForm(props: DeductionFormProps) {
               value={props.currentTime}
               onChange={(e) => props.setCurrentTime(e.target.value)}
               className="w-full min-h-11 rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
+              disabled={isNaming}
             />
           </label>
           <div className="flex gap-2">
@@ -82,6 +117,7 @@ export function DeductionForm(props: DeductionFormProps) {
               type="button"
               variant="outline"
               onClick={() => props.setCurrentTime(toInputDateTime(new Date().toISOString()))}
+              disabled={isNaming}
             >
               使用当前时间
             </Button>
@@ -94,35 +130,127 @@ export function DeductionForm(props: DeductionFormProps) {
               onChange={(e) => props.setLocation(e.target.value)}
               className="w-full min-h-11 rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
               placeholder="例如：上海浦东新区"
+              disabled={isNaming}
             />
           </label>
-          <div className="flex flex-wrap gap-2">
-            {QUICK_LOCATIONS.map((city: string) => (
-              <Button key={city} type="button" variant="outline" size="sm" onClick={() => props.setLocation(city)}>
-                {city}
-              </Button>
-            ))}
-          </div>
+          {isNaming ? null : (
+            <div className="flex flex-wrap gap-2">
+              {QUICK_LOCATIONS.map((city: string) => (
+                <Button key={city} type="button" variant="outline" size="sm" onClick={() => props.setLocation(city)}>
+                  {city}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
       ) : null}
 
       {props.step === 3 ? (
         <div className="space-y-4">
-          <label className="block space-y-2">
-            <span className="text-sm text-xuanpaper/80">问题描述</span>
-            <textarea
-              value={props.question}
-              onChange={(e) => props.setQuestion(e.target.value)}
-              className="w-full min-h-24 rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
-              placeholder={
-                props.analysisMode === "event"
-                  ? "例如：这周是否适合推进换岗谈判？"
-                  : props.analysisMode === "natal"
-                    ? "可选：例如我未来5年事业与关系的主线趋势是什么？"
-                    : "可选：例如未来一年职业与财务的阶段节奏如何？"
-              }
-            />
-          </label>
+          {props.analysisMode === "naming" ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <span className="text-sm text-xuanpaper/80">名字长度（可多选）</span>
+                <div className="flex flex-wrap gap-2">
+                  {[2, 3].map((len) => (
+                    <Button
+                      key={len}
+                      type="button"
+                      size="sm"
+                      variant={props.namingNameLengths.includes(len) ? "primary" : "outline"}
+                      onClick={() => toggleNamingLength(len)}
+                    >
+                      {len}字名
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <span className="text-sm text-xuanpaper/80">风格偏好（可多选）</span>
+                <div className="flex flex-wrap gap-2">
+                  {["传统", "现代", "文雅", "中性", "其他"].map((style) => (
+                    <Button
+                      key={style}
+                      type="button"
+                      size="sm"
+                      variant={props.namingStyles.includes(style) ? "primary" : "outline"}
+                      onClick={() => toggleNamingStyle(style)}
+                    >
+                      {style}
+                    </Button>
+                  ))}
+                </div>
+                {props.namingStyles.includes("其他") ? (
+                  <input
+                    value={props.namingOtherStyle}
+                    onChange={(e) => props.setNamingOtherStyle(e.target.value)}
+                    className="w-full min-h-11 rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
+                    placeholder="补充描述其他风格"
+                  />
+                ) : null}
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="block space-y-2">
+                  <span className="text-sm text-xuanpaper/80">必用字（可选）</span>
+                  <input
+                    value={props.namingMustInclude}
+                    onChange={(e) => props.setNamingMustInclude(e.target.value)}
+                    className="w-full min-h-11 rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
+                    placeholder="例如：宸、安"
+                  />
+                </label>
+                <label className="block space-y-2">
+                  <span className="text-sm text-xuanpaper/80">禁用字（可选）</span>
+                  <input
+                    value={props.namingAvoid}
+                    onChange={(e) => props.setNamingAvoid(e.target.value)}
+                    className="w-full min-h-11 rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
+                    placeholder="例如：伟、强"
+                  />
+                </label>
+              </div>
+              <label className="block space-y-2">
+                <span className="text-sm text-xuanpaper/80">补充偏好（可选）</span>
+                <textarea
+                  value={props.namingPreference}
+                  onChange={(e) => props.setNamingPreference(e.target.value)}
+                  className="w-full min-h-24 rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
+                  placeholder="例如：偏好两字名、寓意稳重、避免生僻字"
+                />
+              </label>
+            </div>
+          ) : (
+            <label className="block space-y-2">
+              <span className="text-sm text-xuanpaper/80">问题描述</span>
+              <textarea
+                value={props.question}
+                onChange={(e) => props.setQuestion(e.target.value)}
+                className="w-full min-h-24 rounded-sm bg-xuangray border border-gold-line/40 px-3 py-2 outline-none focus:border-gold-light"
+                placeholder={
+                  props.analysisMode === "event"
+                    ? "例如：这周是否适合推进换岗谈判？"
+                    : props.analysisMode === "natal"
+                      ? "可选：例如我未来5年事业与关系的主线趋势是什么？"
+                      : "可选：例如未来一年职业与财务的阶段节奏如何？"
+                }
+              />
+            </label>
+          )}
+
+          {props.imageRequired ? (
+            <div className="space-y-2">
+              <ImageAttachmentField
+                attachments={props.attachments}
+                onChange={props.setAttachments}
+                allowCamera={allowCamera}
+                defaultCategory={attachmentCategory}
+                label="上传图片（至少1张，最多6张，单张≤5MB）"
+              />
+              {props.attachments.length === 0 ? (
+                <p className="text-xs text-red-300">该专项至少上传1张图片</p>
+              ) : null}
+            </div>
+          ) : null}
 
           {props.analysisMode === "event" && (
             <div className="rounded-sm border border-gold-line/20 bg-black/10 p-4 space-y-4">
@@ -303,7 +431,7 @@ export function DeductionForm(props: DeductionFormProps) {
           <div className="rounded-sm border border-gold-line/30 bg-xuangray/70 p-3">
             <p className="text-sm text-xuanpaper/70">将提交的结构化上下文：</p>
             <p className="text-sm mt-1 text-gold-light">
-              {props.name || "未填姓名"} / {props.modeLabel} / {props.angles.join("、")}
+              {summaryName} / {props.modeLabel} / {props.angles.join("、")}
               {props.analysisMode === "forecast" ? ` / ${props.forecastWindow === "3m" ? "最近三个月" : "最近一年"}` : null}
               {props.analysisMode === "event" ? ` / ${props.urgency} / ${props.horizon} / ${props.mood}` : null}
             </p>

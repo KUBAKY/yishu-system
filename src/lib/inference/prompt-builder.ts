@@ -136,6 +136,11 @@ export const PARADIGM_SPECS: Record<string, ParadigmSpec> = {
     reasoningFrame: "以五官比例、气色与动态神态进行结构化解读，强调风险预警。",
     reference: "图像+术数语义联合提示词",
   },
+  naming: {
+    label: "五行取名",
+    reasoningFrame: "以孩子八字五行强弱为核心，结合父母五行互补关系，给出姓氏选择与名字方案。",
+    reference: "五行取名语义框架提示词",
+  },
   composite: {
     label: "综合会诊",
     reasoningFrame: "以八字主线融合星座与塔罗视角做交叉校验，强调一致结论与分歧提示。",
@@ -171,6 +176,26 @@ export function buildPrompt(params: {
   question: string;
   currentTime: string;
   location: string;
+  namingContext?: {
+    child?: {
+      gender?: string;
+      birthDate?: string;
+      birthTime?: string;
+      birthLocation?: string;
+    };
+    father?: {
+      name?: string;
+      gender?: string;
+      birthDate?: string;
+      birthTime?: string;
+    };
+    mother?: {
+      name?: string;
+      gender?: string;
+      birthDate?: string;
+      birthTime?: string;
+    };
+  };
   profile: {
     name: string;
     gender: string;
@@ -205,7 +230,7 @@ export function buildPrompt(params: {
   }>;
   engineContext?: string;
 }): string {
-  const { paradigm, analysisMode, forecastWindow, angles, question, currentTime, location, profile, eventContext, lunarContext, spec, foundationModules, imageContext, engineContext, citations: providedCitations } = params;
+  const { paradigm, analysisMode, forecastWindow, angles, question, currentTime, location, namingContext, profile, eventContext, lunarContext, spec, foundationModules, imageContext, engineContext, citations: providedCitations } = params;
   
   const paradigmDirectiveMap: Record<string, string[]> = {
     bazi: [
@@ -249,6 +274,12 @@ export function buildPrompt(params: {
       "必须显式拆解：额、眉、眼、鼻、口、下庭比例与气色特征。",
       "必须给出图片可见证据、风险信号与修正建议。",
     ],
+    naming: [
+      "必须显式拆解：孩子五行强弱、父母五行互补关系与需要补足的元素。",
+      "必须给出推荐姓氏（父姓或母姓）及理由。",
+      "必须输出候选名字清单并标注五行归属与含义。",
+      "必须强制避开生僻字、多音字、谐音不雅、读音拗口的名字。",
+    ],
   };
 
   const paradigmDirectives = paradigmDirectiveMap[paradigm] ?? [];
@@ -272,12 +303,20 @@ export function buildPrompt(params: {
           )
           .join("\n")
       : "- 无";
-  const modeLabel = analysisMode === "event" ? "具体事件推演" : analysisMode === "natal" ? "整体命盘推演" : "阶段命盘推进";
+  const isNaming = paradigm === "naming" || analysisMode === "naming";
+  const modeLabel = isNaming
+    ? "五行取名"
+    : analysisMode === "event"
+      ? "具体事件推演"
+      : analysisMode === "natal"
+        ? "整体命盘推演"
+        : "阶段命盘推进";
   const forecastLabel = forecastWindow === "3m" ? "最近三个月" : forecastWindow === "1y" ? "最近一年" : "不适用";
   const angleLabel = angles.length > 0 ? angles.join("、") : "八字";
-  const targetLength = analysisMode === "event" ? "900-1400字" : "1500-2600字";
-  const modeGoal =
-    analysisMode === "event"
+  const targetLength = isNaming ? "1200-2000字" : analysisMode === "event" ? "900-1400字" : "1500-2600字";
+  const modeGoal = isNaming
+    ? "输出姓氏选择、五行补益方向与规范化命名清单。"
+    : analysisMode === "event"
       ? "围绕当前问题给出决策建议与风险边界。"
       : analysisMode === "natal"
         ? "输出用户整体命盘结构、长期优势短板与人生主线提醒。"
@@ -295,10 +334,25 @@ export function buildPrompt(params: {
         ]
       : [];
 
+  const namingBlock = isNaming
+    ? [
+        "起名信息：",
+        `- 孩子：性别${namingContext?.child?.gender || "未知"}，出生${namingContext?.child?.birthDate || "未知"} ${namingContext?.child?.birthTime || "未知"}，出生地${namingContext?.child?.birthLocation || "未知"}`,
+        `- 父亲：姓名${namingContext?.father?.name || "未知"}，性别${namingContext?.father?.gender || "未知"}，生辰${namingContext?.father?.birthDate || "未知"} ${namingContext?.father?.birthTime || "未知"}`,
+        `- 母亲：姓名${namingContext?.mother?.name || "未知"}，性别${namingContext?.mother?.gender || "未知"}，生辰${namingContext?.mother?.birthDate || "未知"} ${namingContext?.mother?.birthTime || "未知"}`,
+        `- 名字长度偏好：${namingContext?.preferences?.nameLengths && namingContext.preferences.nameLengths.length > 0 ? namingContext.preferences.nameLengths.map((n) => `${n}字名`).join(" / ") : "不限"}`,
+        `- 风格偏好：${namingContext?.preferences?.styles && namingContext.preferences.styles.length > 0 ? namingContext.preferences.styles.join(" / ") : "不限"}${namingContext?.preferences?.otherStyle ? `（${namingContext.preferences.otherStyle}）` : ""}`,
+        `- 必用字：${namingContext?.preferences?.mustIncludeChars || "无"}`,
+        `- 禁用字：${namingContext?.preferences?.avoidChars || "无"}`,
+        `- 额外偏好：${namingContext?.preferences?.notes || "无"}`,
+      ]
+    : [];
   const eventBlock =
-    analysisMode === "event"
-      ? [`事件背景：${eventContext.background}`, `事件参数：紧迫度${eventContext.urgency}，关注周期${eventContext.horizon}，当前心境${eventContext.mood}`]
-      : ["事件背景：本次为命盘级推演，不以单一事件为核心。", `阶段窗口：${forecastLabel}`];
+    isNaming
+      ? ["事件背景：本次为命名推演，不以单一事件为核心。"]
+      : analysisMode === "event"
+        ? [`事件背景：${eventContext.background}`, `事件参数：紧迫度${eventContext.urgency}，关注周期${eventContext.horizon}，当前心境${eventContext.mood}`]
+        : ["事件背景：本次为命盘级推演，不以单一事件为核心。", `阶段窗口：${forecastLabel}`];
   const profileContextBlock = [
     profile.currentResidence ? `现居住地：${profile.currentResidence}` : "",
     profile.pastResidences ? `过往居住地：${profile.pastResidences}` : "",
@@ -315,6 +369,46 @@ export function buildPrompt(params: {
         ]
       : ["图片输入：无"];
 
+  const outputBlock = isNaming
+    ? [
+        "输出必须使用以下四个标题并分别给出内容：",
+        "【总览结论】",
+        "- 必须包含：推荐姓氏（父姓/母姓）+ 取名方向（五行补益、音形义策略）。",
+        "- 必须说明：姓氏选择的逻辑依据与置信度。",
+        "【证据链】",
+        "- 必须包含：孩子五行结构证据、父母五行互补证据、姓氏选择证据。",
+        "- 必须输出一张Markdown表格，列为：证据项 | 来源(开源/古籍/模型) | 结论指向 | 置信度(0-100)。",
+        "【行动建议】",
+        "- 必须分为两组：首选3个 + 备选3个。",
+        "- 首选与备选必须清晰标注分组标题。",
+        "- 每个候选名必须使用格式：姓名｜五行归属｜含义｜适配理由。",
+        "- 必须符合名字长度偏好与必用/禁用字要求。",
+        "- 需给出命名偏好落地建议与可执行筛选方法。",
+        "【风险提示】",
+        "- 必须覆盖：读音歧义、文化禁忌、字形复杂度、五行偏差四类风险。",
+        "- 每类给出监控信号与修正动作。",
+        "- 若父母或孩子出生时间缺失，必须明确不确定性来源与影响。",
+      ]
+    : [
+        "输出必须使用以下四个标题并分别给出内容：",
+        "【总览结论】",
+        "- 必须包含：结构总评、阶段结论、一句总策略（先守/先攻）。",
+        "- 必须包含：3条以上高置信判断，每条给出触发条件。",
+        "【证据链】",
+        "- 必须包含：命盘结构证据、时间线证据、跨范式交叉证据。",
+        "- 必须输出一张Markdown表格，列为：证据项 | 来源(开源/古籍/模型) | 结论指向 | 置信度(0-100)。",
+        "- 来源为“开源”时，优先引用上方“开源能力底座”中的模块名。",
+        "- 必须给出关键年份/阶段清单，至少6条，格式“年份/区间：机会-风险-动作”。",
+        "【行动建议】",
+        "- 必须分三层：90天、1年、3-10年。",
+        "- 每层至少3条动作，动作需可执行、可衡量、可复盘。",
+        "- 必须给出“止损线”与“升级条件”。",
+        "【风险提示】",
+        "- 必须分：财务、关系、健康、决策偏差四类。",
+        "- 每类至少2条风险，并给出监控信号与缓解动作。",
+        "- 最后追加“反证条件”：哪些现实信号出现时，应下调本次判断。",
+      ];
+
   return [
     `术数范式：${paradigm}（${spec.label}）`,
     `推演模式：${modeLabel}`,
@@ -327,6 +421,7 @@ export function buildPrompt(params: {
     `问题：${question}`,
     `咨询者：${profile.name}（${profile.gender}）`,
     `出生生辰：${profile.birthDate} ${profile.birthTime}（请基于此准确时间排八字时柱），出生地：${profile.birthLocation}`,
+    ...(namingBlock.length > 0 ? namingBlock : []),
     ...(profileContextBlock.length > 0 ? ["个人补充档案：", ...profileContextBlock] : []),
     ...imageContextBlock,
     ...eventBlock,
@@ -340,23 +435,7 @@ export function buildPrompt(params: {
     methodBlock,
     "开源能力底座：",
     foundationBlock,
-    "输出必须使用以下四个标题并分别给出内容：",
-    "【总览结论】",
-    "- 必须包含：结构总评、阶段结论、一句总策略（先守/先攻）。",
-    "- 必须包含：3条以上高置信判断，每条给出触发条件。",
-    "【证据链】",
-    "- 必须包含：命盘结构证据、时间线证据、跨范式交叉证据。",
-    "- 必须输出一张Markdown表格，列为：证据项 | 来源(开源/古籍/模型) | 结论指向 | 置信度(0-100)。",
-    "- 来源为“开源”时，优先引用上方“开源能力底座”中的模块名。",
-    "- 必须给出关键年份/阶段清单，至少6条，格式“年份/区间：机会-风险-动作”。",
-    "【行动建议】",
-    "- 必须分三层：90天、1年、3-10年。",
-    "- 每层至少3条动作，动作需可执行、可衡量、可复盘。",
-    "- 必须给出“止损线”与“升级条件”。",
-    "【风险提示】",
-    "- 必须分：财务、关系、健康、决策偏差四类。",
-    "- 每类至少2条风险，并给出监控信号与缓解动作。",
-    "- 最后追加“反证条件”：哪些现实信号出现时，应下调本次判断。",
+    ...outputBlock,
     "古籍参考：",
     citationBlock,
     "表达要求：",

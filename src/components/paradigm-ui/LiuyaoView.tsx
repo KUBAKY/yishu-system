@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { toInputDateTime } from "@/lib/utils";
 
 const COIN_SIDES = {
   YIN: "阴",
@@ -20,7 +21,7 @@ export function LiuyaoView() {
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthLocation, setBirthLocation] = useState("");
-  const [currentTime, setCurrentTime] = useState(() => new Date().toISOString().slice(0, 16));
+  const [currentTime, setCurrentTime] = useState(() => toInputDateTime(new Date().toISOString()));
   const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

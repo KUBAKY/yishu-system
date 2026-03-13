@@ -12,5 +12,8 @@ export const PARADIGMS = [
   { id: "fengshui", label: "堪舆风水" },
   { id: "zodiac", label: "星座占星" },
   { id: "tarot", label: "塔罗推演" },
+  { id: "palmistry", label: "手相分析" },
+  { id: "physiognomy", label: "面相分析" },
+  { id: "naming", label: "起名推演" },
   { id: "composite", label: "综合会诊（八字+星座+塔罗）" },
 ];

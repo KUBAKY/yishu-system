@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { BaziData } from "@/lib/paradigm-engine";
+import { toInputDateTime } from "@/lib/utils";
 
 export function BaziView() {
   const [name, setName] = useState("");
@@ -12,7 +13,7 @@ export function BaziView() {
   const [birthLocation, setBirthLocation] = useState("");
   const [currentResidence, setCurrentResidence] = useState("");
   const [question, setQuestion] = useState("请给出我的整体命盘画像与长期发展建议");
-  const [currentTime, setCurrentTime] = useState(() => new Date().toISOString().slice(0, 16));
+  const [currentTime, setCurrentTime] = useState(() => toInputDateTime(new Date().toISOString()));
   const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { toInputDateTime } from "@/lib/utils";
 
 const TAROT_CARDS = [
   { id: "fool", name: "愚人", desc: "新的开始，冒险，纯真", img: "🤹" },
@@ -38,7 +39,7 @@ export function TarotView() {
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthLocation, setBirthLocation] = useState("");
-  const [currentTime, setCurrentTime] = useState(() => new Date().toISOString().slice(0, 16));
+  const [currentTime, setCurrentTime] = useState(() => toInputDateTime(new Date().toISOString()));
   const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -115,8 +116,8 @@ export function TarotView() {
   return (
     <div className="space-y-8 text-center">
       <div className="space-y-2">
-        <h2 className="text-2xl font-song text-gold-light">塔罗三牌阵</h2>
-        <p className="text-xuanpaper/60">默念心中困惑，抽取三张牌指引方向</p>
+        <h2 className="text-2xl font-song text-gold-light">塔罗三牌阵（大阿尔卡那）</h2>
+        <p className="text-xuanpaper/60">默念心中困惑，抽取三张大阿尔卡那牌指引方向</p>
       </div>
 
       <div className="max-w-md mx-auto">

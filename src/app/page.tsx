@@ -13,7 +13,8 @@ import {
   Stars,
   VenetianMask,
   Hand,
-  ScanFace
+  ScanFace,
+  Type
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -92,6 +93,14 @@ const PARADIGMS = [
     icon: ScanFace,
     color: "text-orange-400",
     href: "/paradigm/physiognomy",
+  },
+  {
+    id: "naming",
+    title: "五行取名",
+    desc: "结合本命八字与父母八字，提供五行互补的取名建议与数理分析",
+    icon: Type,
+    color: "text-rose-400",
+    href: "/paradigm/naming",
   },
 ];
 

@@ -1,16 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { InferenceOverlay } from "./InferenceOverlay";
-
-type ImageAttachment = {
-  name: string;
-  type: string;
-  dataUrl: string;
-  note: string;
-  category: string;
-};
+import { ImageAttachmentField, type ImageAttachment } from "./ImageAttachmentField";
+import { toInputDateTime } from "@/lib/utils";
 
 export function GenericView({
   title,
@@ -27,17 +21,15 @@ export function GenericView({
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthLocation, setBirthLocation] = useState("");
-  const [currentTime, setCurrentTime] = useState(() => new Date().toISOString().slice(0, 16));
+  const [currentTime, setCurrentTime] = useState(() => toInputDateTime(new Date().toISOString()));
   const [location, setLocation] = useState("");
-  const [sunSign, setSunSign] = useState("");
-  const [moonSign, setMoonSign] = useState("");
-  const [risingSign, setRisingSign] = useState("");
   const [phaseFocus, setPhaseFocus] = useState("关系推进");
   const [objective, setObjective] = useState("");
   const [resources, setResources] = useState("");
   const [opposition, setOpposition] = useState("");
   const [decisionWindow, setDecisionWindow] = useState("14天");
   const [spaceType, setSpaceType] = useState("住宅");
+  const [spaceLayout, setSpaceLayout] = useState("");
   const [orientation, setOrientation] = useState("");
   const [issueArea, setIssueArea] = useState("");
   const [occupancy, setOccupancy] = useState("");
@@ -45,7 +37,6 @@ export function GenericView({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
-  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const profileReady =
     name.trim().length >= 2 &&
@@ -57,78 +48,23 @@ export function GenericView({
   const imageReady = !requiresImage || attachments.length > 0;
   const specialReady =
     paradigmId === "zodiac"
-      ? sunSign.trim().length > 0 && moonSign.trim().length > 0 && risingSign.trim().length > 0
+      ? phaseFocus.trim().length > 0
       : paradigmId === "qimen"
         ? objective.trim().length >= 4 && resources.trim().length >= 4 && opposition.trim().length >= 2
         : paradigmId === "fengshui"
-          ? orientation.trim().length >= 2 && issueArea.trim().length >= 4 && occupancy.trim().length >= 2
+          ? orientation.trim().length >= 2 && issueArea.trim().length >= 4 && occupancy.trim().length >= 2 && spaceLayout.trim().length >= 4
           : true;
   const canSubmit = profileReady && questionReady && specialReady && imageReady && currentTime.length > 0 && !loading;
 
-  async function fileToDataUrl(file: File) {
-    return new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-      reader.onerror = () => reject(new Error("图片读取失败"));
-      reader.readAsDataURL(file);
-    });
-  }
-
-  async function handleFilesChange(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) return;
-    try {
-      const picked = Array.from(fileList).slice(0, 6 - attachments.length);
-      const next: ImageAttachment[] = [];
-      for (const file of picked) {
-        if (!file.type.startsWith("image/")) {
-          throw new Error("仅支持图片文件");
-        }
-        if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
-          throw new Error("暂仅支持 JPG/PNG/WebP/GIF，HEIC请先转换");
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error("单张图片需小于5MB");
-        }
-        const dataUrl = await fileToDataUrl(file);
-        if (!dataUrl) {
-          throw new Error("图片编码失败");
-        }
-        next.push({
-          name: file.name,
-          type: file.type,
-          dataUrl,
-          note: "",
-          category:
-            paradigmId === "fengshui"
-              ? "平面图"
-              : paradigmId === "palmistry"
-                ? "手掌照"
-                : "面部照",
-        });
-      }
-      setAttachments((prev) => [...prev, ...next]);
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "图片上传失败");
-    }
-  }
-
-  function updateAttachment(index: number, patch: Partial<ImageAttachment>) {
-    setAttachments((prev) => prev.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)));
-  }
-
-  function removeAttachment(index: number) {
-    setAttachments((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
-  }
-
   const buildContext = () => {
     if (paradigmId === "zodiac") {
-      return `星盘参数：太阳${sunSign}、月亮${moonSign}、上升${risingSign}；阶段主题：${phaseFocus}；问题：${question.trim()}。`;
+      return `星盘基于出生信息自动推导；阶段主题：${phaseFocus}；问题：${question.trim()}。`;
     }
     if (paradigmId === "qimen") {
       return `奇门任务：目标${objective}；可用资源${resources}；外部阻力${opposition}；决策窗口${decisionWindow}；问题：${question.trim()}。`;
     }
     if (paradigmId === "fengshui") {
-      return `空间场景：${spaceType}；朝向${orientation}；症结区域${issueArea}；常住人数${occupancy}；问题：${question.trim()}。`;
+      return `空间场景：${spaceType}；朝向${orientation}；户型/布局${spaceLayout}；症结区域${issueArea}；常住人数${occupancy}；问题：${question.trim()}。`;
     }
     if (paradigmId === "palmistry") {
       return `手相分析：结合掌纹主线、掌丘起伏、手型比例判断先天倾向与阶段策略；问题：${question.trim()}。`;
@@ -318,24 +254,6 @@ export function GenericView({
         {paradigmId === "zodiac" && (
           <div className="grid gap-3 w-full md:grid-cols-3">
             <input
-              value={sunSign}
-              onChange={(event) => setSunSign(event.target.value)}
-              placeholder="太阳星座"
-              className="w-full bg-white/5 border border-gold-line/30 rounded-lg px-4 py-3 text-xuanpaper focus:border-gold-light outline-none"
-            />
-            <input
-              value={moonSign}
-              onChange={(event) => setMoonSign(event.target.value)}
-              placeholder="月亮星座"
-              className="w-full bg-white/5 border border-gold-line/30 rounded-lg px-4 py-3 text-xuanpaper focus:border-gold-light outline-none"
-            />
-            <input
-              value={risingSign}
-              onChange={(event) => setRisingSign(event.target.value)}
-              placeholder="上升星座"
-              className="w-full bg-white/5 border border-gold-line/30 rounded-lg px-4 py-3 text-xuanpaper focus:border-gold-light outline-none"
-            />
-            <input
               value={phaseFocus}
               onChange={(event) => setPhaseFocus(event.target.value)}
               placeholder="阶段主题"
@@ -391,6 +309,12 @@ export function GenericView({
               className="w-full bg-white/5 border border-gold-line/30 rounded-lg px-4 py-3 text-xuanpaper focus:border-gold-light outline-none"
             />
             <input
+              value={spaceLayout}
+              onChange={(event) => setSpaceLayout(event.target.value)}
+              placeholder="户型/布局说明（如三室两厅、动线）"
+              className="w-full bg-white/5 border border-gold-line/30 rounded-lg px-4 py-3 text-xuanpaper focus:border-gold-light outline-none"
+            />
+            <input
               value={issueArea}
               onChange={(event) => setIssueArea(event.target.value)}
               placeholder="问题区域（如卧室、财位）"
@@ -423,81 +347,14 @@ export function GenericView({
         )}
 
         {(paradigmId === "fengshui" || paradigmId === "palmistry" || paradigmId === "physiognomy") && (
-          <div className="w-full space-y-3 text-left">
-            <label className="block text-sm text-xuanpaper/70">
-              上传图片（最多6张，单张≤5MB）
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(event) => {
-                void handleFilesChange(event.target.files);
-                event.currentTarget.value = "";
-              }}
-              className="w-full bg-white/5 border border-gold-line/30 rounded-lg px-4 py-3 text-xuanpaper"
-            />
-            {(paradigmId === "palmistry" || paradigmId === "physiognomy") && (
-              <>
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  multiple
-                  onChange={(event) => {
-                    void handleFilesChange(event.target.files);
-                    event.currentTarget.value = "";
-                  }}
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => cameraInputRef.current?.click()}
-                >
-                  直接拍照上传
-                </Button>
-              </>
-            )}
-            {attachments.length > 0 && (
-              <div className="space-y-3">
-                {attachments.map((item, index) => (
-                  <div key={`${item.name}-${index}`} className="border border-gold-line/20 rounded-lg p-3 bg-black/20 space-y-2">
-                    <div className="relative w-full h-40 rounded-md border border-gold-line/20 overflow-hidden">
-                      <div
-                        role="img"
-                        aria-label={item.name}
-                        className="w-full h-full bg-center bg-cover"
-                        style={{ backgroundImage: `url("${item.dataUrl}")` }}
-                      />
-                    </div>
-                    <div className="grid gap-2 md:grid-cols-2">
-                      <input
-                        value={item.category}
-                        onChange={(event) => updateAttachment(index, { category: event.target.value })}
-                        placeholder="图片类别"
-                        className="w-full bg-white/5 border border-gold-line/30 rounded px-3 py-2 text-xuanpaper focus:border-gold-light outline-none"
-                      />
-                      <input
-                        value={item.note}
-                        onChange={(event) => updateAttachment(index, { note: event.target.value })}
-                        placeholder="标注重点（如方位/掌纹/面部特征）"
-                        className="w-full bg-white/5 border border-gold-line/30 rounded px-3 py-2 text-xuanpaper focus:border-gold-light outline-none"
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-xuanpaper/60">
-                      <span>{item.name}</span>
-                      <button type="button" className="text-red-300 hover:text-red-200" onClick={() => removeAttachment(index)}>
-                        删除
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <ImageAttachmentField
+            attachments={attachments}
+            onChange={setAttachments}
+            allowCamera={paradigmId === "palmistry" || paradigmId === "physiognomy"}
+            defaultCategory={paradigmId === "fengshui" ? "平面图" : paradigmId === "palmistry" ? "手掌照" : "面部照"}
+            label="上传图片（至少1张，最多6张，单张≤5MB）"
+            onError={setError}
+          />
         )}
 
         <textarea

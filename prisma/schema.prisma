@@ -32,6 +32,7 @@ model User {
 
   cases         Case[]
   sessions      Session[]
+  orders        Order[]
 }
 
 model Session {
@@ -78,4 +79,22 @@ model SmsCode {
   createdAt DateTime @default(now())
   
   @@index([phone, code])
+}
+
+model Order {
+  id         String   @id @default(cuid())
+  userId     String?
+  outTradeNo String   @unique      // Generated trade ID sent to ZPay
+  tradeNo    String?               // ZPay's internal trade ID (received via notify)
+  paradigm   String                // inference module name
+  price      Float
+  status     String   @default("PENDING") // PENDING, PAID, CANCELLED
+  payTime    DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([outTradeNo])
+  @@index([userId, status])
 }

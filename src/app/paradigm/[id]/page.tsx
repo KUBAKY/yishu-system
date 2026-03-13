@@ -6,6 +6,7 @@ import { LiuyaoView } from "@/components/paradigm-ui/LiuyaoView";
 import { MeihuaView } from "@/components/paradigm-ui/MeihuaView";
 import { BaziView } from "@/components/paradigm-ui/BaziView";
 import { GenericView } from "@/components/paradigm-ui/GenericView";
+import { NamingView } from "@/components/paradigm-ui/NamingView";
 
 const PARADIGM_CONTENT: Record<string, { title: string; desc: string }> = {
   bazi: {
@@ -34,7 +35,7 @@ const PARADIGM_CONTENT: Record<string, { title: string; desc: string }> = {
   },
   tarot: {
     title: "塔罗推演",
-    desc: "通过牌义结构、顺逆位语义与情境变量给出可执行的行动建议。",
+    desc: "仅使用大阿尔卡那三牌阵，通过牌义结构与情境变量给出可执行的行动建议。",
   },
   palmistry: {
     title: "手相分析",
@@ -43,6 +44,10 @@ const PARADIGM_CONTENT: Record<string, { title: string; desc: string }> = {
   physiognomy: {
     title: "面相分析",
     desc: "结合五官比例与神态特征进行结构化风险识别与行动建议。",
+  },
+  naming: {
+    title: "五行取名",
+    desc: "结合本命八字与父母生辰，提供五行互补的起名框架与数理建议。",
   },
 };
 
@@ -69,6 +74,8 @@ export default async function ParadigmPage({
           <MeihuaView />
         ) : id === "bazi" ? (
           <BaziView />
+        ) : id === "naming" ? (
+          <NamingView />
         ) : (
           <GenericView title={paradigm.title} desc={paradigm.desc} paradigmId={id} />
         )}

@@ -6,7 +6,7 @@ import { appendCase } from "@/lib/cases-store";
 import { retrieveClassicalCitations } from "@/lib/classical-references";
 import { InferencePayload } from "@/lib/inference/types";
 import { getParadigmSpec, buildFoundationModules, buildLunarContext } from "@/lib/inference/prompt-builder";
-import { validateMode, resolveAngles, validateAttachments } from "@/lib/inference/validator";
+import { validateMode, resolveAngles, validateAttachments, validateNamingContext } from "@/lib/inference/validator";
 import { YishuCase } from "@/types/case";
 import { runInferencePipeline, InferencePipelineContext } from "@/lib/inference/pipeline";
 
@@ -35,9 +35,21 @@ export async function POST(request: NextRequest) {
     const analysisMode = validateMode(payload.analysisMode);
     const angles = resolveAngles(paradigm, payload.angles);
     const attachments = validateAttachments(payload.attachments);
+    const requiresImage = paradigm === "fengshui" || paradigm === "palmistry" || paradigm === "physiognomy";
+    if (requiresImage && attachments.length === 0) {
+      return new Response(JSON.stringify({ error: "该专项至少上传1张图片" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
+    const isNaming = analysisMode === "naming" || paradigm === "naming";
     const question = (payload.question ?? "").trim() || 
-      (analysisMode === "natal" ? "请给出我的整体命盘画像与长期发展建议" : "请给出最近阶段的命盘推进建议");
+      (isNaming
+        ? "请依据五行取名并推荐姓氏"
+        : analysisMode === "natal"
+          ? "请给出我的整体命盘画像与长期发展建议"
+          : "请给出最近阶段的命盘推进建议");
 
     // Validate event context only for event mode
     const eventContext = {
@@ -56,8 +68,20 @@ export async function POST(request: NextRequest) {
     const lunarContext = buildLunarContext(currentTime);
     const foundationModules = buildFoundationModules(paradigm, angles);
 
+    let namingContext: ReturnType<typeof validateNamingContext> | undefined;
+    if (isNaming) {
+      try {
+        namingContext = validateNamingContext(payload.namingContext);
+      } catch (error) {
+        return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "命名参数错误" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const promptCitations = await retrieveClassicalCitations({
-      paradigm: paradigm === "composite" ? "bazi" : paradigm,
+      paradigm: paradigm === "composite" || paradigm === "naming" ? "bazi" : paradigm,
       question: question,
       limit: 2,
     });
@@ -81,7 +105,8 @@ export async function POST(request: NextRequest) {
         quote: c.quote,
         source: "classical-references"
       })),
-      lunarContext: lunarContext ? `${lunarContext.solarDate} ${lunarContext.lunarDate} ${lunarContext.ganzhi}` : null
+      lunarContext: lunarContext ? `${lunarContext.solarDate} ${lunarContext.lunarDate} ${lunarContext.ganzhi}` : null,
+      namingContext,
     };
 
     const abortController = new AbortController();
