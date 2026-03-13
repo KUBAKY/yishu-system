@@ -75,7 +75,7 @@ prisma/*.db-journal
 
 ### B. 仓库描述 (Bilingual Description)
 确保 GitHub 的 `Description` 涵盖核心模块。推荐描述：
-> 🔮 意数系统 (Yishu System) - AI 专家推演平台：支持八字命理、奇门遁甲、六爻纳甲、梅花易数、堪舆风水、星占塔罗、手相面相及五行取名。A comprehensive AI metaphysics platform.
+> 🔮 易枢 (Yishu System) - AI 专家推演平台：支持八字命理、奇门遁甲、六爻纳甲、梅花易数、堪舆风水、星占塔罗、手相面相及五行取名。A comprehensive AI metaphysics platform.
 
 ### C. Keywords (package.json)
 我已在 `package.json` 中扩展了更全的关键词列表。

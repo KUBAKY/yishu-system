@@ -1,4 +1,4 @@
-# 意数系统 (Yishu System)
+# 易枢 (Yishu System)
 
 > **基于 AI 大模型驱动的现代化术数推演与决策辅助系统 | A Modern AI-Powered Metaphysics Inference & Decision Support Platform**
 
